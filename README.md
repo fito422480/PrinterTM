@@ -1,4 +1,4 @@
-# TraversyPress UI
+# Printer Money
 
 <img src="img/screen.png" alt="" />
 
