@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import BackButton from '@/components/BackButton';
-import * as z from 'zod';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+import BackButton from "@/components/BackButton";
+import * as z from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Form,
   FormControl,
@@ -11,29 +11,29 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
+} from "@/components/ui/form";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { useRouter } from 'next/navigation';
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 const formSchema = z.object({
   email: z
     .string()
     .min(1, {
-      message: 'Email is required',
+      message: "Email is required",
     })
     .email({
-      message: 'Please enter a valid email',
+      message: "Please enter a valid email",
     }),
   password: z.string().min(1, {
-    message: 'Password is required',
+    message: "Password is required",
   }),
 });
 
@@ -43,41 +43,41 @@ const LoginForm = () => {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: '',
-      password: '',
+      email: "",
+      password: "",
     },
   });
 
   const handleSubmit = (data: z.infer<typeof formSchema>) => {
-    router.push('/');
+    router.push("/");
   };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Login</CardTitle>
+        <CardTitle>Inicio de Sesion</CardTitle>
         <CardDescription>
-          Log into your account with your credentials
+          Accede a tu cuenta con tus credenciales
         </CardDescription>
       </CardHeader>
-      <CardContent className='space-y-2'>
+      <CardContent className="space-y-2">
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(handleSubmit)}
-            className='space-y-6'
+            className="space-y-6"
           >
             <FormField
               control={form.control}
-              name='email'
+              name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className='uppercase text-xs font-bold text-zinc-500 dark:text-white'>
+                  <FormLabel className="uppercase text-xs font-bold text-zinc-500 dark:text-white">
                     Email
                   </FormLabel>
                   <FormControl>
                     <Input
-                      className='bg-slate-100 dark:bg-slate-500 border-0 focus-visible:ring-0 text-black dark:text-white focus-visible: ring-offset-0'
-                      placeholder='Enter Email'
+                      className="bg-slate-100 dark:bg-slate-500 border-0 focus-visible:ring-0 text-black dark:text-white focus-visible: ring-offset-0"
+                      placeholder="Ingrese su mail"
                       {...field}
                     />
                   </FormControl>
@@ -88,17 +88,17 @@ const LoginForm = () => {
 
             <FormField
               control={form.control}
-              name='password'
+              name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className='uppercase text-xs font-bold text-zinc-500 dark:text-white'>
-                    Password
+                  <FormLabel className="uppercase text-xs font-bold text-zinc-500 dark:text-white">
+                    Contraseña
                   </FormLabel>
                   <FormControl>
                     <Input
-                      type='password'
-                      className='bg-slate-100 dark:bg-slate-500 border-0 focus-visible:ring-0 text-black dark:text-white focus-visible: ring-offset-0'
-                      placeholder='Enter Password'
+                      type="password"
+                      className="bg-slate-100 dark:bg-slate-500 border-0 focus-visible:ring-0 text-black dark:text-white focus-visible: ring-offset-0"
+                      placeholder="ingrese su contraseña"
                       {...field}
                     />
                   </FormControl>
@@ -107,7 +107,7 @@ const LoginForm = () => {
               )}
             />
 
-            <Button className='w-full'>Sign In</Button>
+            <Button className="w-full">Acceder</Button>
           </form>
         </Form>
       </CardContent>

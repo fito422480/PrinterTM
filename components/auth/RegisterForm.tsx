@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import BackButton from '@/components/BackButton';
-import * as z from 'zod';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+import BackButton from "@/components/BackButton";
+import * as z from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Form,
   FormControl,
@@ -11,35 +11,35 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
+} from "@/components/ui/form";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { useRouter } from 'next/navigation';
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 const formSchema = z.object({
   name: z.string().min(1, {
-    message: 'Name is required',
+    message: "Name is required",
   }),
   email: z
     .string()
     .min(1, {
-      message: 'Email is required',
+      message: "Email is required",
     })
     .email({
-      message: 'Please enter a valid email',
+      message: "Please enter a valid email",
     }),
   password: z.string().min(1, {
-    message: 'Password is required',
+    message: "Password is required",
   }),
   confirmPassword: z.string().min(1, {
-    message: 'Confirm Password is required',
+    message: "Confirm Password is required",
   }),
 });
 
@@ -49,41 +49,41 @@ const RegisterForm = () => {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: '',
-      email: '',
-      password: '',
-      confirmPassword: '',
+      name: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
     },
   });
 
   const handleSubmit = (data: z.infer<typeof formSchema>) => {
-    router.push('/');
+    router.push("/");
   };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Register</CardTitle>
-        <CardDescription>Sign up by adding the info below</CardDescription>
+        <CardTitle>Regístrese</CardTitle>
+        <CardDescription>añade la siguiente información</CardDescription>
       </CardHeader>
-      <CardContent className='space-y-2'>
+      <CardContent className="space-y-2">
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(handleSubmit)}
-            className='space-y-6'
+            className="space-y-6"
           >
             <FormField
               control={form.control}
-              name='name'
+              name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className='uppercase text-xs font-bold text-zinc-500 dark:text-white'>
-                    Name
+                  <FormLabel className="uppercase text-xs font-bold text-zinc-500 dark:text-white">
+                    Nombre
                   </FormLabel>
                   <FormControl>
                     <Input
-                      className='bg-slate-100 dark:bg-slate-500 border-0 focus-visible:ring-0 text-black dark:text-white focus-visible: ring-offset-0'
-                      placeholder='Enter Name'
+                      className="bg-slate-100 dark:bg-slate-500 border-0 focus-visible:ring-0 text-black dark:text-white focus-visible: ring-offset-0"
+                      placeholder="Ingrese su nombre"
                       {...field}
                     />
                   </FormControl>
@@ -94,16 +94,16 @@ const RegisterForm = () => {
 
             <FormField
               control={form.control}
-              name='email'
+              name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className='uppercase text-xs font-bold text-zinc-500 dark:text-white'>
+                  <FormLabel className="uppercase text-xs font-bold text-zinc-500 dark:text-white">
                     Email
                   </FormLabel>
                   <FormControl>
                     <Input
-                      className='bg-slate-100 dark:bg-slate-500 border-0 focus-visible:ring-0 text-black dark:text-white focus-visible: ring-offset-0'
-                      placeholder='Enter Email'
+                      className="bg-slate-100 dark:bg-slate-500 border-0 focus-visible:ring-0 text-black dark:text-white focus-visible: ring-offset-0"
+                      placeholder="Ingrese su email"
                       {...field}
                     />
                   </FormControl>
@@ -114,17 +114,17 @@ const RegisterForm = () => {
 
             <FormField
               control={form.control}
-              name='password'
+              name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className='uppercase text-xs font-bold text-zinc-500 dark:text-white'>
-                    Password
+                  <FormLabel className="uppercase text-xs font-bold text-zinc-500 dark:text-white">
+                    Contraseña
                   </FormLabel>
                   <FormControl>
                     <Input
-                      type='password'
-                      className='bg-slate-100 dark:bg-slate-500 border-0 focus-visible:ring-0 text-black dark:text-white focus-visible: ring-offset-0'
-                      placeholder='Enter Password'
+                      type="password"
+                      className="bg-slate-100 dark:bg-slate-500 border-0 focus-visible:ring-0 text-black dark:text-white focus-visible: ring-offset-0"
+                      placeholder="Ingrese su contraseña"
                       {...field}
                     />
                   </FormControl>
@@ -135,17 +135,17 @@ const RegisterForm = () => {
 
             <FormField
               control={form.control}
-              name='confirmPassword'
+              name="confirmPassword"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className='uppercase text-xs font-bold text-zinc-500 dark:text-white'>
-                    Confirm Password
+                  <FormLabel className="uppercase text-xs font-bold text-zinc-500 dark:text-white">
+                    Confirmar Contraseña{" "}
                   </FormLabel>
                   <FormControl>
                     <Input
-                      type='confirmPassword'
-                      className='bg-slate-100 dark:bg-slate-500 border-0 focus-visible:ring-0 text-black dark:text-white focus-visible: ring-offset-0'
-                      placeholder='Enter Confirm Password'
+                      type="confirmPassword"
+                      className="bg-slate-100 dark:bg-slate-500 border-0 focus-visible:ring-0 text-black dark:text-white focus-visible: ring-offset-0"
+                      placeholder="Repita su contraseña"
                       {...field}
                     />
                   </FormControl>
@@ -153,7 +153,7 @@ const RegisterForm = () => {
                 </FormItem>
               )}
             />
-            <Button className='w-full'>Sign In</Button>
+            <Button className="w-full">Acceder</Button>
           </form>
         </Form>
       </CardContent>
