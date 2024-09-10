@@ -1,10 +1,8 @@
-# TraversyPress UI
+# Printer Money
 
-<img src="img/screen.png" alt="" />
+Esta plataforma está diseñanda para administrar las facturas de Lending B2C y B2B
 
-This is a admin dashboard UI built with Next.js. It is only the front-end interface so we are just using files for the data. Feel free to add on to it and make it a full stack project.
-
-### Packages Used
+### Paquetes Usados
 
 - Next.js/React
 - TypeScript
@@ -16,24 +14,24 @@ This is a admin dashboard UI built with Next.js. It is only the front-end interf
 - Zod
 - Next Themes
 
-## Getting Started
+## Para empezar
 
-Install dependencies:
+Instalar dependencias:
 
 ```bash
-npm Install
+npm i
 ```
 
-Run the development server:
+Ejecutar el servidor de desarrollo:
 
 ```bash
 npm run dev
-# or
+# o
 yarn dev
-# or
+# o
 pnpm dev
-# or
+# o
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abrir [http://localhost:3000](http://localhost:3000) con su navegador para ver el resultado.
