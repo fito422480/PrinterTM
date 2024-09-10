@@ -4,7 +4,7 @@ import PostsPagination from "@/components/posts/PostsPagination";
 
 const PostsPage = () => {
   // Valores de ejemplo para limit y title
-  const title = "Listado de Facturas";
+  const title = "Todas las Facturas";
 
   return (
     <>
