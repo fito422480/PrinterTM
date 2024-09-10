@@ -22,14 +22,16 @@ import posts from "@/data/posts"; // Importa tu data local o el servicio de fetc
 
 // Define el esquema de validación usando zod
 const formSchema = z.object({
-  invoiceNumber: z.number().min(1, { message: "Nº Documento es requerido" }),
+  invoiceNumber: z.coerce
+    .number()
+    .min(1, { message: "Nº Documento es requerido" }),
   xmlData: z.string().min(1, { message: "El XML es requerido" }),
   date: z.string().min(1, { message: "La fecha es requerida" }),
   status: z.string().min(1, { message: "El estado es requerido" }),
 });
 
 interface PostEditPageProps {
-  params: { id: Number };
+  params: { id: string }; // Asegúrate de que esto coincida con cómo se pasa en Next.js (generalmente string)
 }
 
 const PostEditPage = ({ params }: PostEditPageProps) => {
@@ -39,12 +41,26 @@ const PostEditPage = ({ params }: PostEditPageProps) => {
   const [post, setPost] = useState<any>(null);
 
   useEffect(() => {
+    // Log para ver si el ID está siendo capturado correctamente
+    console.log("Params ID:", params.id);
+
+    // Asegúrate de que el ID sea del tipo correcto
+    const id = Number(params.id);
+
+    // Log para verificar el tipo de ID y los datos de posts
+    console.log("ID convertido:", id);
+    console.log("Posts disponibles:", posts);
+
     // Función para buscar el post por ID
-    const fetchPost = async () => {
+    const fetchPost = () => {
       setLoading(true);
-      const filteredPost = posts.find((p) => p.INVOICE_ID === 227273);
+
+      // Busca el post por ID asegurando que coincidan los tipos
+      const filteredPost = posts.find((p) => p.INVOICE_ID === id);
+
       if (filteredPost) {
         setPost(filteredPost);
+        console.log("Post encontrado:", filteredPost);
       } else {
         console.error("Factura no encontrada!");
       }
@@ -52,7 +68,7 @@ const PostEditPage = ({ params }: PostEditPageProps) => {
     };
 
     fetchPost();
-  }, [227273]);
+  }, [params.id]);
 
   // Inicializar React Hook Form
   const form = useForm({
@@ -79,7 +95,8 @@ const PostEditPage = ({ params }: PostEditPageProps) => {
 
   // Manejo del submit del formulario
   const handleSubmit = (data: any) => {
-    const updatedPostIndex = posts.findIndex((p) => p.INVOICE_ID === 227273);
+    const id = Number(params.id);
+    const updatedPostIndex = posts.findIndex((p) => p.INVOICE_ID === id);
     if (updatedPostIndex !== -1) {
       posts[updatedPostIndex] = {
         ...posts[updatedPostIndex],
@@ -129,6 +146,7 @@ const PostEditPage = ({ params }: PostEditPageProps) => {
                 </FormLabel>
                 <FormControl>
                   <Input
+                    type="number"
                     className="bg-slate-100 dark:bg-slate-500 border-0 focus-visible:ring-0 text-black dark:text-white focus-visible:ring-offset-0"
                     placeholder="Introduce el Nº de Documento"
                     {...field}

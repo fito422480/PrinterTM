@@ -24,16 +24,26 @@ const PostsTable = ({ limit, title }: PostsTableProps) => {
     "ALL"
   );
 
+  // Estado para manejar la búsqueda
+  const [searchTerm, setSearchTerm] = useState("");
+
   // Ordenar los posts en orden descendente según la fecha
   const sortedPosts = [...posts].sort(
     (a, b) =>
       new Date(b.D_FE_EMI_DE).getTime() - new Date(a.D_FE_EMI_DE).getTime()
   );
 
-  // Filtrar los posts según el estado seleccionado
+  // Filtrar los posts según el estado seleccionado y el término de búsqueda en FACTURA, ESTADO y FECHA
   const filteredPosts = sortedPosts.filter((post) => {
-    if (filterStatus === "ALL") return true;
-    return post.RESULT_STATUS === filterStatus;
+    const matchesStatus =
+      filterStatus === "ALL" || post.RESULT_STATUS === filterStatus;
+
+    const matchesSearch =
+      post.D_NUM_DOC?.toString().toLowerCase().includes(searchTerm.toLowerCase()) ||
+      post.RESULT_STATUS?.toString().toLowerCase().includes(searchTerm.toLowerCase()) ||
+      post.D_FE_EMI_DE?.toString().toLowerCase().includes(searchTerm.toLowerCase());
+
+    return matchesStatus && matchesSearch;
   });
 
   // Aplicar límite si se proporciona
@@ -45,11 +55,11 @@ const PostsTable = ({ limit, title }: PostsTableProps) => {
         {title ? title : "Lista de Facturas"}
       </h3>
 
-      {/* Controles de Filtro */}
-      <div className="mb-4">
+      {/* Controles de Filtro y Campo de Búsqueda */}
+      <div className="flex items-center mb-4 space-x-2">
         <button
           onClick={() => setFilterStatus("ALL")}
-          className={`px-4 py-2 mr-2 ${
+          className={`px-4 py-2 ${
             filterStatus === "ALL" ? "bg-gray-300" : "bg-gray-100"
           } rounded`}
         >
@@ -57,7 +67,7 @@ const PostsTable = ({ limit, title }: PostsTableProps) => {
         </button>
         <button
           onClick={() => setFilterStatus("ERROR")}
-          className={`px-4 py-2 mr-2 ${
+          className={`px-4 py-2 ${
             filterStatus === "ERROR" ? "bg-red-300" : "bg-red-100"
           } rounded`}
         >
@@ -71,6 +81,15 @@ const PostsTable = ({ limit, title }: PostsTableProps) => {
         >
           OK
         </button>
+
+        {/* Campo de búsqueda */}
+        <input
+          type="text"
+          placeholder="Buscar por FACTURA, ESTADO o FECHA"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="px-4 py-2 border rounded flex-1"
+        />
       </div>
 
       <Table>
