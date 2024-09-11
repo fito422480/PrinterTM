@@ -18,7 +18,7 @@ interface PostsTableProps {
   title?: string;
 }
 
-const PostsTable = ({ limit, title }: PostsTableProps) => {
+const PostsTable = ({ limit = 11, title }: PostsTableProps) => {
   // Estado para manejar el filtro de estado
   const [filterStatus, setFilterStatus] = useState<"ALL" | "ERROR" | "OK">(
     "ALL"
@@ -26,6 +26,9 @@ const PostsTable = ({ limit, title }: PostsTableProps) => {
 
   // Estado para manejar la búsqueda
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Estado para manejar la página actual
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Ordenar los posts en orden descendente según la fecha
   const sortedPosts = [...posts].sort(
@@ -39,15 +42,34 @@ const PostsTable = ({ limit, title }: PostsTableProps) => {
       filterStatus === "ALL" || post.RESULT_STATUS === filterStatus;
 
     const matchesSearch =
-      post.D_NUM_DOC?.toString().toLowerCase().includes(searchTerm.toLowerCase()) ||
-      post.RESULT_STATUS?.toString().toLowerCase().includes(searchTerm.toLowerCase()) ||
-      post.D_FE_EMI_DE?.toString().toLowerCase().includes(searchTerm.toLowerCase());
+      post.D_NUM_DOC?.toString()
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      post.RESULT_STATUS?.toString()
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      post.D_FE_EMI_DE?.toString()
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase());
 
     return matchesStatus && matchesSearch;
   });
 
-  // Aplicar límite si se proporciona
-  const limitedPosts = limit ? filteredPosts.slice(0, limit) : filteredPosts;
+  // Calcular el número total de páginas
+  const totalPages = Math.ceil(filteredPosts.length / limit);
+
+  // Obtener los registros para la página actual
+  const paginatedPosts = filteredPosts.slice(
+    (currentPage - 1) * limit,
+    currentPage * limit
+  );
+
+  // Función para cambiar de página
+  const changePage = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+    }
+  };
 
   return (
     <div className="mt-10">
@@ -110,7 +132,7 @@ const PostsTable = ({ limit, title }: PostsTableProps) => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {limitedPosts.map((post, index) => (
+          {paginatedPosts.map((post, index) => (
             <TableRow
               key={post.INVOICE_ID}
               className={classNames({
@@ -143,6 +165,27 @@ const PostsTable = ({ limit, title }: PostsTableProps) => {
           ))}
         </TableBody>
       </Table>
+
+      {/* Controles de paginación */}
+      <div className="flex justify-between items-center mt-4">
+        <button
+          onClick={() => changePage(currentPage - 1)}
+          disabled={currentPage === 1}
+          className="px-4 py-2 bg-gray-100 rounded disabled:opacity-50"
+        >
+          Anterior
+        </button>
+        <span>
+          Página {currentPage} de {totalPages}
+        </span>
+        <button
+          onClick={() => changePage(currentPage + 1)}
+          disabled={currentPage === totalPages}
+          className="px-4 py-2 bg-gray-100 rounded disabled:opacity-50"
+        >
+          Siguiente
+        </button>
+      </div>
     </div>
   );
 };
