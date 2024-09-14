@@ -132,8 +132,8 @@ const PostEditPage = ({ params }: PostEditPageProps) => {
   // Renderizado del formulario
   return (
     <>
-      <BackButton text="Volver a Lista de Documentos" link="/posts" />
-      <h3 className="text-2xl mb-4">Editar Documento</h3>
+      <BackButton text="Atrás" link="/posts" />
+      <h3 className="text-2xl mb-4">Editar Factura</h3>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
           <FormField
