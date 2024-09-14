@@ -30,13 +30,13 @@ function ThemeToggler() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuItem onClick={() => setTheme("light")}>
-          Light
+          Amarillo
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme("dark")}>
-          Dark
+          Azul
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme("system")}>
-          System
+          Sistema
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
