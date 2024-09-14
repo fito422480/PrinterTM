@@ -15,7 +15,7 @@ import ThemeToggler from "@/components/ThemeToggler";
 
 const Navbar = () => {
   return (
-    <div className="bg-primary dark:bg-slate-700 text-white py-2 px-5 flex justify-between">
+    <div className="bg-primary dark:bg-blue-1100 text-white py-2 px-5 flex justify-between">
       <Link href="/">
         <Image src={logo} alt="PrinterMoney" width={185} />
       </Link>
@@ -25,7 +25,6 @@ const Navbar = () => {
         <DropdownMenu>
           <DropdownMenuTrigger className="focus:outline-none">
             <Avatar>
-              {/* <AvatarImage src="/img/profile.png" alt="@shadcn" /> */}
               <Image
                 src={profile}
                 alt="TM"

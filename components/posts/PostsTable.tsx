@@ -18,7 +18,7 @@ interface PostsTableProps {
   title?: string;
 }
 
-const PostsTable = ({ limit = 11, title }: PostsTableProps) => {
+const PostsTable = ({ limit = 10, title }: PostsTableProps) => {
   // Estado para manejar el filtro de estado
   const [filterStatus, setFilterStatus] = useState<"ALL" | "ERROR" | "OK">(
     "ALL"
@@ -106,11 +106,11 @@ const PostsTable = ({ limit = 11, title }: PostsTableProps) => {
 
         {/* Campo de búsqueda */}
         <input
-          type="text"
+          type="search"
           placeholder="Buscar por FACTURA, ESTADO o FECHA"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="px-4 py-2 border rounded flex-1"
+          className="bg-slate-50 px-4 py-2 border rounded flex-1"
         />
       </div>
 
