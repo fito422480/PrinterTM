@@ -27,9 +27,12 @@ const AnalyticsChart = () => {
           <CardDescription>Facturas Aprobadas por Mes</CardDescription>
         </CardHeader>
         <CardContent>
-          <div style={{ width: "100%", height: 300 }}>
+          <div
+            style={{ width: "100%", height: 300 }}
+            className="flex gap-5 justify-center items-center"
+          >
             <ResponsiveContainer>
-              <LineChart width={1100} height={300} data={data}>
+              <LineChart width={1000} height={300} data={data}>
                 <Line type="monotone" dataKey="uv" stroke="#001950" />
                 <CartesianGrid stroke="#ccc" />
                 <XAxis dataKey="name" />
