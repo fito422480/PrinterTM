@@ -141,13 +141,13 @@ const PostEditPage = ({ params }: PostEditPageProps) => {
             name="invoiceNumber"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="uppercase text-xs font-bold text-zinc-500 dark:text-white">
+                <FormLabel className="uppercase text-xs font-bold text-black dark:text-black">
                   Nº Documento
                 </FormLabel>
                 <FormControl>
                   <Input
                     type="number"
-                    className="bg-slate-100 dark:bg-slate-500 border-0 focus-visible:ring-0 text-black dark:text-white focus-visible:ring-offset-0"
+                    className="bg-slate-100 bg-secondary border-0 focus-visible:ring-0 text-black dark:text-black focus-visible:ring-offset-0"
                     placeholder="Introduce el Nº de Documento"
                     {...field}
                   />
@@ -162,12 +162,12 @@ const PostEditPage = ({ params }: PostEditPageProps) => {
             name="xmlData"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="uppercase text-xs font-bold text-zinc-500 dark:text-white">
+                <FormLabel className="uppercase text-xs font-bold text-black dark:text-dark">
                   XML
                 </FormLabel>
                 <FormControl>
                   <Textarea
-                    className="bg-slate-100 dark:bg-slate-500 border-0 focus-visible:ring-0 text-black dark:text-white focus-visible:ring-offset-0"
+                    className="bg-slate-100 bg-secondary border-0 focus-visible:ring-0 text-black dark:text-black focus-visible:ring-offset-0"
                     placeholder="Introduce los datos XML"
                     {...field}
                   />
@@ -182,12 +182,12 @@ const PostEditPage = ({ params }: PostEditPageProps) => {
             name="date"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="uppercase text-xs font-bold text-zinc-500 dark:text-white">
+                <FormLabel className="uppercase text-xs font-bold text-black dark:text-black">
                   Fecha Emisión
                 </FormLabel>
                 <FormControl>
                   <Input
-                    className="bg-slate-100 border-0 focus-visible:ring-0 text-black dark:text-white focus-visible:ring-offset-0"
+                    className="bg-slate-100 bg-secondary border-0 focus-visible:ring-0 text-black dark:text-black focus-visible:ring-offset-0"
                     placeholder="Introduce la Fecha de Emisión"
                     {...field}
                   />
@@ -202,12 +202,12 @@ const PostEditPage = ({ params }: PostEditPageProps) => {
             name="status"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="uppercase text-xs font-bold text-zinc-500 dark:text-white">
+                <FormLabel className="uppercase text-xs font-bold text-black dark:text-black">
                   Estado
                 </FormLabel>
                 <FormControl>
                   <Input
-                    className="bg-slate-100 border-0 focus-visible:ring-0 text-black dark:text-white focus-visible:ring-offset-0"
+                    className="bg-slate-100 bg-secondary border-0 focus-visible:ring-0 text-black dark:text-black focus-visible:ring-offset-0"
                     placeholder="Introduce el Estado"
                     {...field}
                   />

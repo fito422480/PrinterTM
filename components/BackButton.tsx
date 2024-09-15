@@ -10,7 +10,7 @@ const BackButton = ({ text, link }: BackButtonProps) => {
   return (
     <Link
       href={link}
-      className="bg-yellow-1200 hover:underline flex items-center gap-1 font-bold mb-5"
+      className="text-yellow-400 dark:text-blue-950 hover:underline flex items-center gap-1 font-bold mb-5"
     >
       <ArrowLeftCircle size={18} /> {text}
     </Link>
