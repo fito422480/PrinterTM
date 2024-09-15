@@ -187,7 +187,7 @@ const PostEditPage = ({ params }: PostEditPageProps) => {
                 </FormLabel>
                 <FormControl>
                   <Input
-                    className="bg-slate-100 dark:bg-slate-500 border-0 focus-visible:ring-0 text-black dark:text-white focus-visible:ring-offset-0"
+                    className="bg-slate-100 border-0 focus-visible:ring-0 text-black dark:text-white focus-visible:ring-offset-0"
                     placeholder="Introduce la Fecha de Emisión"
                     {...field}
                   />
@@ -207,7 +207,7 @@ const PostEditPage = ({ params }: PostEditPageProps) => {
                 </FormLabel>
                 <FormControl>
                   <Input
-                    className="bg-slate-100 dark:bg-slate-500 border-0 focus-visible:ring-0 text-black dark:text-white focus-visible:ring-offset-0"
+                    className="bg-slate-100 border-0 focus-visible:ring-0 text-black dark:text-white focus-visible:ring-offset-0"
                     placeholder="Introduce el Estado"
                     {...field}
                   />
@@ -219,7 +219,7 @@ const PostEditPage = ({ params }: PostEditPageProps) => {
 
           <Button
             type="submit"
-            className="w-full dark:bg-slate-800 dark:text-white"
+            className="w-full dark:bg-blue-1100 dark:text-white"
           >
             Actualizar Documento
           </Button>
