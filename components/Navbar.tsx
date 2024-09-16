@@ -1,6 +1,9 @@
+"use client";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import logo from "../img/money.png";
+import logo1 from "../img/moneyA.png";
+import logo2 from "../img/moneyB.png";
 import profile from "../img/profile.png";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -12,12 +15,31 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import ThemeToggler from "@/components/ThemeToggler";
+import { useTheme } from "next-themes";
 
 const Navbar = () => {
+  const { theme, systemTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
+
+  const currentTheme = theme === "system" ? systemTheme : theme;
+
+  // Agregar console.log para depurar
+  console.log("Tema actual:", currentTheme);
+
   return (
-    <div className="bg-primary dark:bg-blue-1100 text-white py-2 px-5 flex justify-between">
+    <div className="bg-primary text-white py-2 px-5 flex justify-between">
       <Link href="/">
-        <Image src={logo} alt="PrinterMoney" width={185} />
+        <Image
+          src={currentTheme === "dark" ? logo1 : logo2} // Asegúrate de que coincida con los valores reales
+          alt="PrinterMoney"
+          width={185}
+        />
       </Link>
 
       <div className="flex items-center">
