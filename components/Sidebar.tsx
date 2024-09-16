@@ -16,6 +16,7 @@ import {
   CreditCard,
   Settings,
   User,
+  ListEnd,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -31,11 +32,11 @@ const Sidebar = () => {
             <Link href="/">Panel de Inicio</Link>
           </CommandItem>
           <CommandItem>
-            <Newspaper className="mr-2 h-4 w-4" />
+            <ListEnd className="mr-2 h-4 w-4" />
             <Link href="/posts">Facturas</Link>
           </CommandItem>
           <CommandItem>
-            <Folders className="mr-2 h-4 w-4" />
+            <Newspaper className="mr-2 h-4 w-4" />
             <Link href="#">Procesar en Batch</Link>
           </CommandItem>
         </CommandGroup>
