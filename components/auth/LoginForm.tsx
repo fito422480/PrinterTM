@@ -76,7 +76,7 @@ const LoginForm = () => {
                   </FormLabel>
                   <FormControl>
                     <Input
-                      className="bg-secondary dark:secondary border-0 focus-visible:ring-0 text-black dark:text-white focus-visible: ring-offset-0"
+                      className="bg-secondary dark:secondary border-0 focus-visible:ring-0 text-black dark:text-black focus-visible: ring-offset-0"
                       placeholder="Ingrese su mail"
                       {...field}
                     />
@@ -97,7 +97,7 @@ const LoginForm = () => {
                   <FormControl>
                     <Input
                       type="password"
-                      className="bg-secondary dark:bg-secondary border-0 focus-visible:ring-0 text-black dark:text-white focus-visible: ring-offset-0"
+                      className="bg-secondary dark:bg-secondary border-0 focus-visible:ring-0 text-black dark:text-black focus-visible: ring-offset-0"
                       placeholder="ingrese su contraseña"
                       {...field}
                     />
