@@ -27,13 +27,13 @@ const formSchema = z.object({
   email: z
     .string()
     .min(1, {
-      message: "Email is required",
+      message: "Email requerido",
     })
     .email({
-      message: "Please enter a valid email",
+      message: "Ingrese un email valido",
     }),
   password: z.string().min(1, {
-    message: "Password is required",
+    message: "Contraseña requerida",
   }),
 });
 
@@ -71,12 +71,12 @@ const LoginForm = () => {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="uppercase text-xs font-bold text-zinc-500 dark:text-white">
+                  <FormLabel className="uppercase text-xs font-bold text-black dark:text-black">
                     Email
                   </FormLabel>
                   <FormControl>
                     <Input
-                      className="bg-slate-100 dark:bg-slate-500 border-0 focus-visible:ring-0 text-black dark:text-white focus-visible: ring-offset-0"
+                      className="bg-secondary dark:secondary border-0 focus-visible:ring-0 text-black dark:text-white focus-visible: ring-offset-0"
                       placeholder="Ingrese su mail"
                       {...field}
                     />
@@ -91,13 +91,13 @@ const LoginForm = () => {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="uppercase text-xs font-bold text-zinc-500 dark:text-white">
+                  <FormLabel className="uppercase text-xs font-bold text-black dark:text-black">
                     Contraseña
                   </FormLabel>
                   <FormControl>
                     <Input
                       type="password"
-                      className="bg-slate-100 dark:bg-slate-500 border-0 focus-visible:ring-0 text-black dark:text-white focus-visible: ring-offset-0"
+                      className="bg-secondary dark:bg-secondary border-0 focus-visible:ring-0 text-black dark:text-white focus-visible: ring-offset-0"
                       placeholder="ingrese su contraseña"
                       {...field}
                     />

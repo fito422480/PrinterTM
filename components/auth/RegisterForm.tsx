@@ -77,12 +77,12 @@ const RegisterForm = () => {
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="uppercase text-xs font-bold text-zinc-500 dark:text-white">
+                  <FormLabel className="uppercase text-xs font-bold text-black dark:text-black">
                     Nombre
                   </FormLabel>
                   <FormControl>
                     <Input
-                      className="bg-slate-100 dark:bg-slate-500 border-0 focus-visible:ring-0 text-black dark:text-white focus-visible: ring-offset-0"
+                      className="bg-secondary  dark:bg-secondary border-0 focus-visible:ring-0 text-black focus-visible: ring-offset-0"
                       placeholder="Ingrese su nombre"
                       {...field}
                     />
@@ -97,12 +97,12 @@ const RegisterForm = () => {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="uppercase text-xs font-bold text-zinc-500 dark:text-white">
+                  <FormLabel className="uppercase text-xs font-bold text-black dark:text-black">
                     Email
                   </FormLabel>
                   <FormControl>
                     <Input
-                      className="bg-slate-100 dark:bg-slate-500 border-0 focus-visible:ring-0 text-black dark:text-white focus-visible: ring-offset-0"
+                      className="bg-secondary dark:bg-secondary border-0 focus-visible:ring-0 text-black dark:text-black focus-visible: ring-offset-0"
                       placeholder="Ingrese su email"
                       {...field}
                     />
@@ -117,13 +117,13 @@ const RegisterForm = () => {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="uppercase text-xs font-bold text-zinc-500 dark:text-white">
+                  <FormLabel className="uppercase text-xs font-bold text-black dark:text-black">
                     Contraseña
                   </FormLabel>
                   <FormControl>
                     <Input
                       type="password"
-                      className="bg-slate-100 dark:bg-slate-500 border-0 focus-visible:ring-0 text-black dark:text-white focus-visible: ring-offset-0"
+                      className="bg-secondary dark:bg-secondary border-0 focus-visible:ring-0 text-black dark:text-black focus-visible: ring-offset-0"
                       placeholder="Ingrese su contraseña"
                       {...field}
                     />
@@ -138,13 +138,13 @@ const RegisterForm = () => {
               name="confirmPassword"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="uppercase text-xs font-bold text-zinc-500 dark:text-white">
+                  <FormLabel className="uppercase text-xs font-bold text-black dark:text-black">
                     Confirmar Contraseña{" "}
                   </FormLabel>
                   <FormControl>
                     <Input
                       type="confirmPassword"
-                      className="bg-slate-100 dark:bg-slate-500 border-0 focus-visible:ring-0 text-black dark:text-white focus-visible: ring-offset-0"
+                      className="bg-secondary dark:bg-secondary border-0 focus-visible:ring-0 text-black dark:text-black focus-visible: ring-offset-0"
                       placeholder="Repita su contraseña"
                       {...field}
                     />
