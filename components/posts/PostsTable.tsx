@@ -19,24 +19,17 @@ interface PostsTableProps {
 }
 
 const PostsTable = ({ limit = 10, title }: PostsTableProps) => {
-  // Estado para manejar el filtro de estado
   const [filterStatus, setFilterStatus] = useState<"ALL" | "ERROR" | "OK">(
     "ALL"
   );
-
-  // Estado para manejar la búsqueda
   const [searchTerm, setSearchTerm] = useState("");
-
-  // Estado para manejar la página actual
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Ordenar los posts en orden descendente según la fecha
   const sortedPosts = [...posts].sort(
     (a, b) =>
       new Date(b.D_FE_EMI_DE).getTime() - new Date(a.D_FE_EMI_DE).getTime()
   );
 
-  // Filtrar los posts según el estado seleccionado y el término de búsqueda en FACTURA, ESTADO y FECHA
   const filteredPosts = sortedPosts.filter((post) => {
     const matchesStatus =
       filterStatus === "ALL" || post.RESULT_STATUS === filterStatus;
@@ -55,16 +48,12 @@ const PostsTable = ({ limit = 10, title }: PostsTableProps) => {
     return matchesStatus && matchesSearch;
   });
 
-  // Calcular el número total de páginas
   const totalPages = Math.ceil(filteredPosts.length / limit);
-
-  // Obtener los registros para la página actual
   const paginatedPosts = filteredPosts.slice(
     (currentPage - 1) * limit,
     currentPage * limit
   );
 
-  // Función para cambiar de página
   const changePage = (newPage: number) => {
     if (newPage >= 1 && newPage <= totalPages) {
       setCurrentPage(newPage);
@@ -114,10 +103,10 @@ const PostsTable = ({ limit = 10, title }: PostsTableProps) => {
         />
       </div>
 
-      <Table>
+      <Table className="shadow-lg rounded-lg overflow-hidden">
         <TableCaption>Lista de documentos recientes</TableCaption>
         <TableHeader>
-          <TableRow>
+          <TableRow className="bg-primary text-black dark:text-white">
             <TableHead>FACTURA</TableHead>
             <TableHead className="hidden md:table-cell">ESTADO</TableHead>
             <TableHead className="hidden md:table-cell text-center">
@@ -135,10 +124,13 @@ const PostsTable = ({ limit = 10, title }: PostsTableProps) => {
           {paginatedPosts.map((post, index) => (
             <TableRow
               key={post.INVOICE_ID}
-              className={classNames({
-                "bg-gray-100": index % 2 === 0,
-                "bg-white": index % 2 !== 0,
-              })}
+              className={classNames(
+                "transition-shadow duration-200 hover:shadow-xl hover:bg-gray-50",
+                {
+                  "bg-gray-100": index % 2 === 0,
+                  "bg-white": index % 2 !== 0,
+                }
+              )}
             >
               <TableCell>{post.D_NUM_DOC}</TableCell>
               <TableCell className="hidden md:table-cell">
@@ -171,7 +163,7 @@ const PostsTable = ({ limit = 10, title }: PostsTableProps) => {
         <button
           onClick={() => changePage(currentPage - 1)}
           disabled={currentPage === 1}
-          className="px-4 py-2 bg-gray-100 rounded disabled:opacity-50"
+          className="px-4 py-2 bg-primary text-black dark:text-white rounded disabled:opacity-50"
         >
           Anterior
         </button>
@@ -181,7 +173,7 @@ const PostsTable = ({ limit = 10, title }: PostsTableProps) => {
         <button
           onClick={() => changePage(currentPage + 1)}
           disabled={currentPage === totalPages}
-          className="px-4 py-2 bg-gray-100 rounded disabled:opacity-50"
+          className="px-4 py-2 bg-primary text-black dark:text-white rounded disabled:opacity-50"
         >
           Siguiente
         </button>
