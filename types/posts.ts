@@ -9,8 +9,8 @@ export interface Post {
   D_SERIE: string;
   D_FE_EMI_DE: string;
   CDC: string;
-  XML_RECEIVED: string;
-  XML_SENT: string;
+  XML_RECEIVED: XML;
+  XML_SENT: XML;
   CREATION_DATE: string;
   STATUS: string;
   RETRY_TIMES: number;
@@ -27,9 +27,7 @@ export interface Post {
   D_FE_EMI_DE_BK: string;
 }
 
-
 export interface XML {
-  id: string;
-  text: string;
-  username: string;
+  dRucEm: string;
+  dNomRec: string;
 }
