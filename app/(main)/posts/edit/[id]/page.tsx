@@ -169,7 +169,7 @@ const PostEditPage = ({ params }: PostEditPageProps) => {
   return (
     <>
       <BackButton text="Atrás" link="/posts" />
-      <h3 className="text-2xl mb-4">Editar Factura</h3>
+      <h3 className="text-2xl mb-4">Editar Documento</h3>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
           <FormField
@@ -183,6 +183,27 @@ const PostEditPage = ({ params }: PostEditPageProps) => {
                 <FormControl>
                   <Input
                     type="number"
+                    className="bg-slate-100 bg-secondary border-0 focus-visible:ring-0 text-black dark:text-black"
+                    placeholder="Introduce el Nº de Documento"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="status"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="uppercase text-xs font-bold text-black dark:text-black">
+                  Estado
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    type="string"
                     className="bg-slate-100 bg-secondary border-0 focus-visible:ring-0 text-black dark:text-black"
                     placeholder="Introduce el Nº de Documento"
                     {...field}
@@ -216,7 +237,7 @@ const PostEditPage = ({ params }: PostEditPageProps) => {
           <Button
             type="button"
             onClick={() => setIsDialogOpen(true)}
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+            className="dark:bg-blue-1100 hover:secondary text-white font-bold py-2 px-4 rounded"
           >
             Editar XML
           </Button>
@@ -228,11 +249,29 @@ const PostEditPage = ({ params }: PostEditPageProps) => {
               </DialogHeader>
 
               <div className="space-y-4">
+                {/* Campo Fecha Emision */}
+                <FormItem>
+                  <FormLabel>Fecha Emision</FormLabel>
+                  <FormControl>
+                    <Input
+                      className="bg-slate-100 bg-secondary border-0 focus-visible:ring-0 text-black dark:text-black"
+                      value={
+                        xmlDataParsed?.rDE?.DE?.[0]?.gDatGralOpe?.[0]
+                          ?.dFeEmiDE[0] || ""
+                      }
+                      onChange={(e) =>
+                        handleXmlChange("dFeEmiDE", e.target.value)
+                      }
+                    />
+                  </FormControl>
+                </FormItem>
+
                 {/* Campo RUC Emisor */}
                 <FormItem>
                   <FormLabel>RUC Emisor</FormLabel>
                   <FormControl>
                     <Input
+                      className="bg-slate-100 bg-secondary border-0 focus-visible:ring-0 text-black dark:text-black"
                       value={
                         xmlDataParsed?.rDE?.DE?.[0]?.gDatGralOpe?.[0]
                           ?.gEmis?.[0]?.dRucEm[0] || ""
@@ -246,9 +285,10 @@ const PostEditPage = ({ params }: PostEditPageProps) => {
 
                 {/* Campo Nombre Receptor */}
                 <FormItem>
-                  <FormLabel>Nombre Receptor</FormLabel>
+                  <FormLabel>Nombre Cliente</FormLabel>
                   <FormControl>
                     <Input
+                      className="bg-slate-100 bg-secondary border-0 focus-visible:ring-0 text-black dark:text-black"
                       value={
                         xmlDataParsed?.rDE?.DE?.[0]?.gDatGralOpe?.[0]
                           ?.gDatRec?.[0]?.dNomRec[0] || ""
@@ -259,7 +299,6 @@ const PostEditPage = ({ params }: PostEditPageProps) => {
                     />
                   </FormControl>
                 </FormItem>
-
                 {/* Otros campos del XML se pueden añadir aquí */}
               </div>
 
@@ -272,7 +311,7 @@ const PostEditPage = ({ params }: PostEditPageProps) => {
                       description: "Los campos del XML han sido actualizados.",
                     });
                   }}
-                  className="bg-blue-500 hover:bg-blue-700 text-white"
+                  className="dark:bg-blue-1100 dark:text-white hover:secondary"
                 >
                   Guardar
                 </Button>
