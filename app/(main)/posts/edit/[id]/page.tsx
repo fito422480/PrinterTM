@@ -273,8 +273,8 @@ const PostEditPage = ({ params }: PostEditPageProps) => {
                     <Input
                       className="bg-slate-100 bg-secondary border-0 focus-visible:ring-0 text-black dark:text-black"
                       value={
-                        xmlDataParsed?.rDE?.DE?.[0]?.gEmis?.[0]?.dRucEm?.[0] ||
-                        ""
+                        xmlDataParsed?.rDE?.DE?.[0]?.gDatGralOpe?.[0]
+                          ?.gEmis?.[0]?.dRucEm?.[0] || ""
                       }
                       onChange={(e) =>
                         handleXmlChange("dRucEm", e.target.value)
@@ -289,8 +289,8 @@ const PostEditPage = ({ params }: PostEditPageProps) => {
                     <Input
                       className="bg-slate-100 bg-secondary border-0 focus-visible:ring-0 text-black dark:text-black"
                       value={
-                        xmlDataParsed?.rDE?.DE?.[0]?.gDatRec?.[0]
-                          ?.dNomRec?.[0] || ""
+                        xmlDataParsed?.rDE?.DE?.[0]?.gDatGralOpe?.[0]
+                          ?.gDatRec?.[0]?.dNomRec?.[0] || ""
                       }
                       onChange={(e) =>
                         handleXmlChange("dNomRec", e.target.value)
