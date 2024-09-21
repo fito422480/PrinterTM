@@ -2,6 +2,7 @@ import DashboardCard from "@/components/dashboard/DashboardCard";
 import PostsTable from "@/components/posts/PostsTable";
 import AnalyticsChart from "@/components/dashboard/AnalyticsChart";
 import { Send, CopyX, ListChecks, CircleX } from "lucide-react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export default function Home() {
   const formatNumber = (num: number) =>
@@ -37,6 +38,7 @@ export default function Home() {
       </div>
       <AnalyticsChart />
       <PostsTable title="Facturas" limit={3} />
+      <SpeedInsights />
     </>
   );
 }
