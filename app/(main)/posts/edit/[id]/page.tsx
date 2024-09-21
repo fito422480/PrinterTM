@@ -136,27 +136,28 @@ const PostEditPage = ({ params }: PostEditPageProps) => {
     setXmlDataParsed((prev: any) => {
       const updated = { ...prev };
 
-      // Verificar si la estructura existe antes de intentar acceder a los índices
       if (key === "dRucEm") {
         if (!updated.rDE?.DE?.[0]?.gEmis?.[0]?.dRucEm) {
-          // Si no existe, inicializamos la estructura
           updated.rDE = updated.rDE || {};
           updated.rDE.DE = updated.rDE.DE || [{}];
           updated.rDE.DE[0].gEmis = updated.rDE.DE[0].gEmis || [{}];
-          updated.rDE.DE[0].gEmis[0].dRucEm = [];
         }
-        // Actualizar el valor
-        updated.rDE.DE[0].gEmis[0].dRucEm[0] = value;
+        // Update the value in a copy of the object
+        updated.rDE.DE[0].gEmis[0].dRucEm = [value];
       } else if (key === "dNomRec") {
         if (!updated.rDE?.DE?.[0]?.gDatRec?.[0]?.dNomRec) {
-          // Si no existe, inicializamos la estructura
           updated.rDE = updated.rDE || {};
           updated.rDE.DE = updated.rDE.DE || [{}];
           updated.rDE.DE[0].gDatRec = updated.rDE.DE[0].gDatRec || [{}];
-          updated.rDE.DE[0].gDatRec[0].dNomRec = [];
         }
-        // Actualizar el valor
-        updated.rDE.DE[0].gDatRec[0].dNomRec[0] = value;
+        updated.rDE.DE[0].gDatRec[0].dNomRec = [value];
+      } else if (key === "dFeEmiDE") {
+        if (!updated.rDE?.DE?.[0]?.gDatGralOpe?.[0]?.dFeEmiDE) {
+          updated.rDE = updated.rDE || {};
+          updated.rDE.DE = updated.rDE.DE || [{}];
+          updated.rDE.DE[0].gDatGralOpe = updated.rDE.DE[0].gDatGralOpe || [{}];
+        }
+        updated.rDE.DE[0].gDatGralOpe[0].dFeEmiDE = [value];
       }
 
       return updated;
@@ -236,7 +237,7 @@ const PostEditPage = ({ params }: PostEditPageProps) => {
 
           <Button
             type="button"
-            onClick={() => setIsDialogOpen(true)}
+            onClick={() => setIsDialogOpen(true)} // Abre el diálogo
             className="dark:bg-blue-1100 hover:secondary text-white font-bold py-2 px-4 rounded"
           >
             Editar XML
@@ -249,15 +250,15 @@ const PostEditPage = ({ params }: PostEditPageProps) => {
               </DialogHeader>
 
               <div className="space-y-4">
-                {/* Campo Fecha Emision */}
+                {/* Campos para editar el XML */}
                 <FormItem>
-                  <FormLabel>Fecha Emision</FormLabel>
+                  <FormLabel>Fecha Emisión</FormLabel>
                   <FormControl>
                     <Input
                       className="bg-slate-100 bg-secondary border-0 focus-visible:ring-0 text-black dark:text-black"
                       value={
                         xmlDataParsed?.rDE?.DE?.[0]?.gDatGralOpe?.[0]
-                          ?.dFeEmiDE[0] || ""
+                          ?.dFeEmiDE?.[0] || ""
                       }
                       onChange={(e) =>
                         handleXmlChange("dFeEmiDE", e.target.value)
@@ -266,15 +267,14 @@ const PostEditPage = ({ params }: PostEditPageProps) => {
                   </FormControl>
                 </FormItem>
 
-                {/* Campo RUC Emisor */}
                 <FormItem>
                   <FormLabel>RUC Emisor</FormLabel>
                   <FormControl>
                     <Input
                       className="bg-slate-100 bg-secondary border-0 focus-visible:ring-0 text-black dark:text-black"
                       value={
-                        xmlDataParsed?.rDE?.DE?.[0]?.gDatGralOpe?.[0]
-                          ?.gEmis?.[0]?.dRucEm[0] || ""
+                        xmlDataParsed?.rDE?.DE?.[0]?.gEmis?.[0]?.dRucEm?.[0] ||
+                        ""
                       }
                       onChange={(e) =>
                         handleXmlChange("dRucEm", e.target.value)
@@ -283,15 +283,14 @@ const PostEditPage = ({ params }: PostEditPageProps) => {
                   </FormControl>
                 </FormItem>
 
-                {/* Campo Nombre Receptor */}
                 <FormItem>
                   <FormLabel>Nombre Cliente</FormLabel>
                   <FormControl>
                     <Input
                       className="bg-slate-100 bg-secondary border-0 focus-visible:ring-0 text-black dark:text-black"
                       value={
-                        xmlDataParsed?.rDE?.DE?.[0]?.gDatGralOpe?.[0]
-                          ?.gDatRec?.[0]?.dNomRec[0] || ""
+                        xmlDataParsed?.rDE?.DE?.[0]?.gDatRec?.[0]
+                          ?.dNomRec?.[0] || ""
                       }
                       onChange={(e) =>
                         handleXmlChange("dNomRec", e.target.value)
@@ -299,7 +298,6 @@ const PostEditPage = ({ params }: PostEditPageProps) => {
                     />
                   </FormControl>
                 </FormItem>
-                {/* Otros campos del XML se pueden añadir aquí */}
               </div>
 
               <DialogFooter>
