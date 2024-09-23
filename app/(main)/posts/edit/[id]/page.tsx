@@ -131,6 +131,7 @@ const PostEditPage = ({ params }: PostEditPageProps) => {
     }
   };
 
+  const builder = new xml2js.Builder();
   // Modal para editar XML
   const handleXmlChange = (key: string, value: string) => {
     setXmlDataParsed((prev: any) => {
@@ -151,6 +152,12 @@ const PostEditPage = ({ params }: PostEditPageProps) => {
       } else if (key === "dFeEmiDE") {
         generalData.dFeEmiDE = [value];
       }
+
+      // Convierte el objeto actualizado a un string XML
+      const updatedXmlString = builder.buildObject(updated);
+
+      // Actualizar el campo de XML en el formulario
+      form.setValue("xmlData", updatedXmlString);
 
       return updated;
     });
