@@ -134,30 +134,22 @@ const PostEditPage = ({ params }: PostEditPageProps) => {
   // Modal para editar XML
   const handleXmlChange = (key: string, value: string) => {
     setXmlDataParsed((prev: any) => {
-      const updated = { ...prev };
+      // Clonar el objeto del XML para mantener inmutabilidad
+      const updated = JSON.parse(JSON.stringify(prev));
+
+      // Asegurar que rDE y DE existan
+      const generalData = updated?.rDE?.DE?.[0]?.gDatGralOpe?.[0] || {};
 
       if (key === "dRucEm") {
-        if (!updated.rDE?.DE?.[0]?.gEmis?.[0]?.dRucEm) {
-          updated.rDE = updated.rDE || {};
-          updated.rDE.DE = updated.rDE.DE || [{}];
-          updated.rDE.DE[0].gEmis = updated.rDE.DE[0].gEmis || [{}];
-        }
-        // Update the value in a copy of the object
-        updated.rDE.DE[0].gEmis[0].dRucEm = [value];
+        // Asegurar que gEmis exista
+        generalData.gEmis = generalData.gEmis || [{}];
+        generalData.gEmis[0].dRucEm = [value];
       } else if (key === "dNomRec") {
-        if (!updated.rDE?.DE?.[0]?.gDatRec?.[0]?.dNomRec) {
-          updated.rDE = updated.rDE || {};
-          updated.rDE.DE = updated.rDE.DE || [{}];
-          updated.rDE.DE[0].gDatRec = updated.rDE.DE[0].gDatRec || [{}];
-        }
-        updated.rDE.DE[0].gDatRec[0].dNomRec = [value];
+        // Asegurar que gDatRec exista
+        generalData.gDatRec = generalData.gDatRec || [{}];
+        generalData.gDatRec[0].dNomRec = [value];
       } else if (key === "dFeEmiDE") {
-        if (!updated.rDE?.DE?.[0]?.gDatGralOpe?.[0]?.dFeEmiDE) {
-          updated.rDE = updated.rDE || {};
-          updated.rDE.DE = updated.rDE.DE || [{}];
-          updated.rDE.DE[0].gDatGralOpe = updated.rDE.DE[0].gDatGralOpe || [{}];
-        }
-        updated.rDE.DE[0].gDatGralOpe[0].dFeEmiDE = [value];
+        generalData.dFeEmiDE = [value];
       }
 
       return updated;
