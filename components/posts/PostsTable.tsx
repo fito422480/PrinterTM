@@ -115,9 +115,9 @@ const PostsTable = ({ limit = 10, title }: PostsTableProps) => {
             <TableHead className="hidden md:table-cell text-center">
               Actualizar
             </TableHead>
-            <TableHead className="hidden md:table-cell text-center">
+            {/* <TableHead className="hidden md:table-cell text-center">
               Reprocesar
-            </TableHead>
+            </TableHead> */}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -146,13 +146,13 @@ const PostsTable = ({ limit = 10, title }: PostsTableProps) => {
                   </button>
                 </Link>
               </TableCell>
-              <TableCell className="text-center">
+              {/* <TableCell className="text-center">
                 <Link href={`/posts/reprocess/${post.INVOICE_ID}`}>
                   <button className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded text-xs">
                     Enviar
                   </button>
                 </Link>
-              </TableCell>
+              </TableCell> */}
             </TableRow>
           ))}
         </TableBody>

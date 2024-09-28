@@ -6,6 +6,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useRouter } from "next/navigation";
 import xml2js from "xml2js";
+import { Builder } from "xml2js";
+
 import {
   Dialog,
   DialogTrigger,
@@ -131,7 +133,14 @@ const PostEditPage = ({ params }: PostEditPageProps) => {
     }
   };
 
-  const builder = new xml2js.Builder();
+  //const builder = new xml2js.Builder();
+  const builder = new Builder({
+    headless: true, // Excluye el encabezado del XML
+  });
+
+  const minifyXml = (xmlString: string): string => {
+    return xmlString.replace(/\s*(<[^>]+>)\s*/g, "$1"); // Elimina saltos de línea y espacios en blanco
+  };
   // Modal para editar XML
   const handleXmlChange = (key: string, value: string) => {
     setXmlDataParsed((prev: any) => {
@@ -154,7 +163,9 @@ const PostEditPage = ({ params }: PostEditPageProps) => {
       }
 
       // Convierte el objeto actualizado a un string XML
-      const updatedXmlString = builder.buildObject(updated);
+      let updatedXmlString = builder.buildObject(updated);
+
+      updatedXmlString = minifyXml(updatedXmlString);
 
       // Actualizar el campo de XML en el formulario
       form.setValue("xmlData", updatedXmlString);
