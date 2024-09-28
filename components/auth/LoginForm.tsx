@@ -1,5 +1,6 @@
-"use client";
+"use client"; // Asegurarte de que se está ejecutando en el cliente
 
+import { useRouter } from "next/navigation"; // Asegúrate de importar de next/navigation
 import BackButton from "@/components/BackButton";
 import * as z from "zod";
 import { useForm } from "react-hook-form";
@@ -21,7 +22,6 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
 
 const formSchema = z.object({
   email: z
@@ -38,7 +38,7 @@ const formSchema = z.object({
 });
 
 const LoginForm = () => {
-  const router = useRouter();
+  const router = useRouter(); // Debe venir de next/navigation
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -49,13 +49,13 @@ const LoginForm = () => {
   });
 
   const handleSubmit = (data: z.infer<typeof formSchema>) => {
-    router.push("/");
+    router.push("/"); // Redirige a la página principal
   };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Inicio de Sesion</CardTitle>
+        <CardTitle>Inicio de Sesión</CardTitle>
         <CardDescription>
           Accede a tu cuenta con tus credenciales
         </CardDescription>
@@ -85,7 +85,6 @@ const LoginForm = () => {
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="password"
@@ -106,8 +105,9 @@ const LoginForm = () => {
                 </FormItem>
               )}
             />
-
-            <Button className="w-full">Acceder</Button>
+            <Button type="submit" className="w-full">
+              Acceder
+            </Button>
           </form>
         </Form>
       </CardContent>
