@@ -1,7 +1,7 @@
-"use client"; // Asegurarte de que se está ejecutando en el cliente
+"use client"; // Asegúrate de que este componente se ejecute en el cliente
 
-import { useRouter } from "next/navigation"; // Asegúrate de importar de next/navigation
-import BackButton from "@/components/BackButton";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import * as z from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -23,22 +23,19 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
+// Esquema de validación del formulario
 const formSchema = z.object({
   email: z
     .string()
-    .min(1, {
-      message: "Email requerido",
-    })
-    .email({
-      message: "Ingrese un email valido",
-    }),
-  password: z.string().min(1, {
-    message: "Contraseña requerida",
-  }),
+    .min(1, { message: "Email requerido" })
+    .email({ message: "Ingrese un email válido" }),
+  password: z.string().min(1, { message: "Contraseña requerida" }),
 });
 
 const LoginForm = () => {
-  const router = useRouter(); // Debe venir de next/navigation
+  const router = useRouter(); // Usado para redirigir
+  const [loading, setLoading] = useState(false); // Estado de carga
+  const [errorMessage, setErrorMessage] = useState<string | null>(null); // Estado para mostrar errores de autenticación
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -48,8 +45,41 @@ const LoginForm = () => {
     },
   });
 
-  const handleSubmit = (data: z.infer<typeof formSchema>) => {
-    router.push("/"); // Redirige a la página principal
+  // Función para manejar el envío del formulario
+  const handleSubmit = async (data: z.infer<typeof formSchema>) => {
+    setLoading(true);
+    setErrorMessage(null);
+
+    try {
+      const response = await fetch("https://apilogin-omega.vercel.app/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+
+      // Verificar si la respuesta es 200 (éxito)
+      if (!response.ok) {
+        throw new Error("Credenciales inválidas. Inténtalo de nuevo.");
+      }
+
+      const result = await response.json();
+
+      // Puedes mostrar el mensaje de éxito al usuario
+      console.log(result.message);
+
+      // Si el login es exitoso, podrías guardar un estado de autenticación
+      localStorage.setItem("isAuthenticated", "true");
+
+      // Redirigir al usuario a la página principal
+      router.push("/");
+    } catch (error: any) {
+      // Mostrar el error al usuario
+      setErrorMessage(error.message || "Error desconocido.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -66,18 +96,21 @@ const LoginForm = () => {
             onSubmit={form.handleSubmit(handleSubmit)}
             className="space-y-6"
           >
+            {errorMessage && (
+              <div className="text-red-500 text-sm">{errorMessage}</div>
+            )}
             <FormField
               control={form.control}
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="uppercase text-xs font-bold text-black dark:text-black">
+                  <FormLabel className="uppercase text-xs font-bold text-black">
                     Email
                   </FormLabel>
                   <FormControl>
                     <Input
-                      className="bg-secondary dark:secondary border-0 focus-visible:ring-0 text-black dark:text-black focus-visible: ring-offset-0"
-                      placeholder="Ingrese su mail"
+                      className="bg-secondary border-0 focus-visible:ring-0 text-black"
+                      placeholder="Ingrese su email"
                       {...field}
                     />
                   </FormControl>
@@ -90,14 +123,14 @@ const LoginForm = () => {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="uppercase text-xs font-bold text-black dark:text-black">
+                  <FormLabel className="uppercase text-xs font-bold text-black">
                     Contraseña
                   </FormLabel>
                   <FormControl>
                     <Input
                       type="password"
-                      className="bg-secondary dark:bg-secondary border-0 focus-visible:ring-0 text-black dark:text-black focus-visible: ring-offset-0"
-                      placeholder="ingrese su contraseña"
+                      className="bg-secondary border-0 focus-visible:ring-0 text-black"
+                      placeholder="Ingrese su contraseña"
                       {...field}
                     />
                   </FormControl>
@@ -105,8 +138,8 @@ const LoginForm = () => {
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full">
-              Acceder
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Accediendo..." : "Acceder"}
             </Button>
           </form>
         </Form>
