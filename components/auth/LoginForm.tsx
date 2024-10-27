@@ -58,7 +58,7 @@ const LoginForm = () => {
         }),
       });
 
-      if (response.status === 404) {
+      if (response.status != 200) {
         // Autenticación exitosa
         document.cookie = "isAuthenticated=true; path=/;";
         localStorage.setItem("isAuthenticated", "true");
