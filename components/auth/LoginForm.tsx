@@ -5,8 +5,6 @@ import { useState } from "react";
 import * as z from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMsal } from "@azure/msal-react";
-import { InteractionType } from "@azure/msal-browser";
 import {
   Form,
   FormControl,
@@ -27,46 +25,48 @@ import { Button } from "@/components/ui/button";
 
 // Esquema de validación del formulario
 const formSchema = z.object({
-  email: z
-    .string()
-    .min(1, { message: "Email requerido" })
-    .email({ message: "Ingrese un email válido" }),
+  usuario: z.string().min(1, { message: "Usuario requerido" }), // Campo usuario
   password: z.string().min(1, { message: "Contraseña requerida" }),
 });
 
 const LoginForm = () => {
   const router = useRouter();
-  const { instance } = useMsal(); // Hooks de MSAL para manejar autenticación
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: "",
+      usuario: "", // Campo de usuario
       password: "",
     },
   });
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (values: z.infer<typeof formSchema>) => {
     setLoading(true);
     setErrorMessage(null);
 
     try {
-      // Iniciar el proceso de autenticación con Azure AD
-      await instance.loginPopup({
-        scopes: ["User.Read"],
-        prompt: "select_account", // Asegura que el usuario seleccione una cuenta
+      const response = await fetch("/pages/api/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          usuario: values.usuario, // Usar 'usuario' en lugar de 'email'
+          password: values.password,
+        }),
       });
 
-      // Autenticación exitosa: establecer cookie para el middleware
-      document.cookie = "isAuthenticated=true; path=/;";
-
-      // También puedes guardar el estado en localStorage para otras verificaciones del lado del cliente
-      localStorage.setItem("isAuthenticated", "true");
-
-      // Redirigir al usuario a la página principal
-      router.push("/");
+      if (response.status === 404) {
+        // Autenticación exitosa
+        document.cookie = "isAuthenticated=true; path=/;";
+        localStorage.setItem("isAuthenticated", "true");
+        router.push("/");
+      } else {
+        const errorData = await response.json();
+        setErrorMessage(errorData.message);
+      }
     } catch (error: any) {
       setErrorMessage("Error de autenticación: " + error.message);
     } finally {
@@ -78,20 +78,60 @@ const LoginForm = () => {
     <Card>
       <CardHeader>
         <CardTitle>Inicio de Sesión</CardTitle>
-        <CardDescription>Accede con tu cuenta de Azure AD</CardDescription>
+        <CardDescription>Accede con tu cuenta de LDAP</CardDescription>
       </CardHeader>
       <CardContent className="space-y-2">
         <Form {...form}>
           <form
-            onSubmit={form.handleSubmit(handleSubmit)} // Eliminar el manejo del email/password ya que Azure AD lo maneja
+            onSubmit={form.handleSubmit(handleSubmit)}
             className="space-y-6"
           >
+            <FormField
+              control={form.control}
+              name="usuario"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="uppercase text-xs font-bold text-black dark:text-black">
+                    Usuario
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      className="bg-secondary dark:bg-secondary border-1 focus-visible:ring-1 text-black dark:text-black focus-visible: ring-offset-1"
+                      placeholder="usuario de red"
+                      {...field}
+                      type="text" // Tipo de entrada 'text'
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="uppercase text-xs font-bold text-black dark:text-black">
+                    Contraseña
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      className="bg-secondary dark:bg-secondary border-1 focus-visible:ring-1 text-black dark:text-black focus-visible: ring-offset-1"
+                      placeholder="Ingrese su contraseña"
+                      {...field}
+                      type="password"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             {errorMessage && (
               <div className="text-red-500 text-sm">{errorMessage}</div>
             )}
 
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Accediendo..." : "Iniciar Sesión con Azure AD"}
+              {loading ? "Accediendo..." : "Iniciar Sesión con LDAP"}
             </Button>
           </form>
         </Form>

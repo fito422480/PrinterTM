@@ -82,7 +82,7 @@ const RegisterForm = () => {
                   </FormLabel>
                   <FormControl>
                     <Input
-                      className="bg-secondary  dark:bg-secondary border-0 focus-visible:ring-0 text-black focus-visible: ring-offset-0"
+                      className="bg-secondary dark:bg-secondary border-1 focus-visible:ring-1 text-black dark:text-black focus-visible: ring-offset-1"
                       placeholder="Ingrese su nombre"
                       {...field}
                     />
@@ -102,7 +102,7 @@ const RegisterForm = () => {
                   </FormLabel>
                   <FormControl>
                     <Input
-                      className="bg-secondary dark:bg-secondary border-0 focus-visible:ring-0 text-black dark:text-black focus-visible: ring-offset-0"
+                      className="bg-secondary dark:bg-secondary border-1 focus-visible:ring-1 text-black dark:text-black focus-visible: ring-offset-1"
                       placeholder="Ingrese su email"
                       {...field}
                     />
@@ -123,7 +123,7 @@ const RegisterForm = () => {
                   <FormControl>
                     <Input
                       type="password"
-                      className="bg-secondary dark:bg-secondary border-0 focus-visible:ring-0 text-black dark:text-black focus-visible: ring-offset-0"
+                      className="bg-secondary dark:bg-secondary border-1 focus-visible:ring-1 text-black dark:text-black focus-visible: ring-offset-1"
                       placeholder="Ingrese su contraseña"
                       {...field}
                     />
@@ -144,7 +144,7 @@ const RegisterForm = () => {
                   <FormControl>
                     <Input
                       type="confirmPassword"
-                      className="bg-secondary dark:bg-secondary border-0 focus-visible:ring-0 text-black dark:text-black focus-visible: ring-offset-0"
+                      className="bg-secondary dark:bg-secondary border-1 focus-visible:ring-1 text-black dark:text-black focus-visible: ring-offset-1"
                       placeholder="Repita su contraseña"
                       {...field}
                     />
