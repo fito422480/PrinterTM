@@ -23,9 +23,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-// Esquema de validación del formulario
 const formSchema = z.object({
-  usuario: z.string().min(1, { message: "Usuario requerido" }), // Campo usuario
+  usuario: z.string().min(1, { message: "Usuario requerido" }),
   password: z.string().min(1, { message: "Contraseña requerida" }),
 });
 
@@ -37,7 +36,7 @@ const LoginForm = () => {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      usuario: "", // Campo de usuario
+      usuario: "",
       password: "",
     },
   });
@@ -47,21 +46,21 @@ const LoginForm = () => {
     setErrorMessage(null);
 
     try {
-      const response = await fetch("/pages/api/login", {
+      const response = await fetch("/api/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          usuario: values.usuario, // Usar 'usuario' en lugar de 'email'
+          usuario: values.usuario,
           password: values.password,
         }),
       });
 
-      if (response.status != 200) {
-        // Autenticación exitosa
-        document.cookie = "isAuthenticated=true; path=/;";
-        localStorage.setItem("isAuthenticated", "true");
+      if (response.ok) {
+        const data = await response.json();
+        // Almacena el token en localStorage y redirige
+        localStorage.setItem("accessToken", data.access_token);
         router.push("/");
       } else {
         const errorData = await response.json();
@@ -78,7 +77,7 @@ const LoginForm = () => {
     <Card>
       <CardHeader>
         <CardTitle>Inicio de Sesión</CardTitle>
-        <CardDescription>Accede con tu cuenta de LDAP</CardDescription>
+        <CardDescription>Accede con tu cuenta de Keycloak</CardDescription>
       </CardHeader>
       <CardContent className="space-y-2">
         <Form {...form}>
@@ -97,9 +96,9 @@ const LoginForm = () => {
                   <FormControl>
                     <Input
                       className="bg-secondary dark:bg-secondary border-1 focus-visible:ring-1 text-black dark:text-black focus-visible: ring-offset-1"
-                      placeholder="usuario de red"
+                      placeholder="Usuario de keycloak"
                       {...field}
-                      type="text" // Tipo de entrada 'text'
+                      type="text"
                     />
                   </FormControl>
                   <FormMessage />
@@ -129,9 +128,8 @@ const LoginForm = () => {
             {errorMessage && (
               <div className="text-red-500 text-sm">{errorMessage}</div>
             )}
-
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Accediendo..." : "Iniciar Sesión con LDAP"}
+              {loading ? "Accediendo..." : "Iniciar Sesión"}
             </Button>
           </form>
         </Form>

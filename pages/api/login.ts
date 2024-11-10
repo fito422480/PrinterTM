@@ -1,50 +1,42 @@
-import { NextApiRequest, NextApiResponse } from "next";
-import ldap from "ldapjs";
-import { promisify } from "util";
+import type { NextApiRequest, NextApiResponse } from "next";
+import { keycloakConfig } from "@/lib/keycloak";
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
     return res.status(405).json({ message: "Método no permitido" });
   }
 
   const { usuario, password } = req.body;
 
-  if (!usuario || !password) {
-    return res
-      .status(400)
-      .json({ message: "Usuario y contraseña son requeridos" });
-  }
-
-  console.log("LDAP URI:", process.env.LDAP_URI);
-
-  const client = ldap.createClient({
-    url: process.env.LDAP_URI || "ldap://p-ad-dc-02.telecel.net.py:389",
-  });
-
-  // Cambiamos el DN a 'CN=LDAPUSER,CN=Users,DC=telecel,DC=net,DC=py'
-  const dn = `CN=GRP_TusRecibos,OU=Grupos de Usuarios,DC=telecel,DC=net,DC=py`;
-
-  const bindAsync = promisify(client.bind.bind(client));
-  const unbindAsync = promisify(client.unbind.bind(client));
-
   try {
-    await bindAsync(dn, password);
-    await unbindAsync();
-    return res.status(200).json({ message: "Autenticación exitosa" });
-  } catch (err) {
-    if (err instanceof Error) {
-      console.error("Error de autenticación LDAP:", err);
-      return res
-        .status(401)
-        .json({ message: `Credenciales inválidas: ${err.message}` });
+    const params = new URLSearchParams();
+    params.append("client_id", keycloakConfig.clientId);
+    params.append("client_secret", keycloakConfig.clientSecret);
+    params.append("grant_type", "password");
+    params.append("username", usuario);
+    params.append("password", password);
+
+    const response = await fetch(
+      `${keycloakConfig.url}/realms/${keycloakConfig.realm}/protocol/openid-connect/token`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: params,
+      }
+    );
+
+    if (response.ok) {
+      const data = await response.json();
+      res.status(200).json(data);
     } else {
-      console.error("Error desconocido en autenticación LDAP:", err);
-      return res.status(401).json({ message: "Credenciales inválidas" });
+      const errorData = await response.json();
+      res
+        .status(response.status)
+        .json({ message: errorData.error_description || "Error de autenticación" });
     }
-  } finally {
-    client.unbind();
+  } catch (error) {
+    res.status(500).json({ message: "Error interno del servidor" });
   }
 }
