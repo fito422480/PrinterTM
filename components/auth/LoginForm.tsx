@@ -58,9 +58,7 @@ const LoginForm = () => {
       });
 
       if (response.ok) {
-        const data = await response.json();
-        // Almacena el token en localStorage y redirige
-        localStorage.setItem("accessToken", data.access_token);
+        // Redirigir al usuario a la página de inicio
         router.push("/");
       } else {
         const errorData = await response.json();
@@ -76,8 +74,8 @@ const LoginForm = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Inicio de Sesión</CardTitle>
-        <CardDescription>Accede con tu cuenta de Keycloak</CardDescription>
+        <CardTitle>Accede con tu cuenta de Keycloak</CardTitle>
+        <CardDescription> </CardDescription>
       </CardHeader>
       <CardContent className="space-y-2">
         <Form {...form}>
@@ -129,7 +127,7 @@ const LoginForm = () => {
               <div className="text-red-500 text-sm">{errorMessage}</div>
             )}
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Accediendo..." : "Iniciar Sesión"}
+              {loading ? "Accediendo..." : "Acceder"}
             </Button>
           </form>
         </Form>

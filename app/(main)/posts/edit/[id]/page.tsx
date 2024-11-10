@@ -28,7 +28,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import BackButton from "@/components/BackButton";
-import posts from "@/data/posts";
+import { fetchPosts as posts } from "@/data/posts";
 
 // Esquema de validación usando zod
 const formSchema = z.object({
@@ -56,13 +56,18 @@ const PostEditPage = ({ params }: PostEditPageProps) => {
   useEffect(() => {
     const id = Number(params.id);
 
-    const fetchPost = () => {
+    const fetchPost = async () => {
       setLoading(true);
-      const filteredPost = posts.find((p) => p.INVOICE_ID === id);
-      if (filteredPost) {
-        setPost(filteredPost);
-      } else {
-        console.error("Factura no encontrada!");
+      try {
+        const postsArray = await posts(); // Espera el resultado de fetchPosts
+        const filteredPost = postsArray.find((p) => p.ID === id); // Usa .find en el arreglo resuelto
+        if (filteredPost) {
+          setPost(filteredPost);
+        } else {
+          console.error("Factura no encontrada!");
+        }
+      } catch (error) {
+        console.error("Error al obtener las facturas:", error);
       }
       setLoading(false);
     };
@@ -109,16 +114,18 @@ const PostEditPage = ({ params }: PostEditPageProps) => {
   }, [post, form]);
 
   // Submit del formulario
-  const handleSubmit = (data: any) => {
+  const handleSubmit = async (data: any) => {
     const id = Number(params.id);
-    const updatedPostIndex = posts.findIndex((p) => p.INVOICE_ID === id);
+
+    // Espera a que fetchPosts se resuelva
+    const postsArray = await posts();
+    const updatedPostIndex = postsArray.findIndex((p) => p.ID === id);
 
     if (updatedPostIndex !== -1) {
-      posts[updatedPostIndex] = {
-        ...posts[updatedPostIndex],
+      postsArray[updatedPostIndex] = {
+        ...postsArray[updatedPostIndex],
         D_NUM_DOC: data.invoiceNumber,
         XML_RECEIVED: data.xmlData,
-        D_FE_EMI_DE: data.date,
         STATUS: data.status,
       };
 

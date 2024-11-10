@@ -1,7 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { keycloakConfig } from "@/lib/keycloak";
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
   if (req.method !== "POST") {
     return res.status(405).json({ message: "Método no permitido" });
   }
@@ -29,12 +32,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (response.ok) {
       const data = await response.json();
-      res.status(200).json(data);
+
+      // Configuración de la cookie `isAuthenticated` con las opciones necesarias
+      res.setHeader(
+        "Set-Cookie",
+        `isAuthenticated=true; Path=/; HttpOnly; Secure; Max-Age=86400`
+      );
+
+      // También puedes almacenar el token de acceso en el cliente si es necesario
+      res.status(200).json({ access_token: data.access_token });
     } else {
       const errorData = await response.json();
-      res
-        .status(response.status)
-        .json({ message: errorData.error_description || "Error de autenticación" });
+      res.status(response.status).json({
+        message: errorData.error_description || "Error de autenticación",
+      });
     }
   } catch (error) {
     res.status(500).json({ message: "Error interno del servidor" });

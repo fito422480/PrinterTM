@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Table,
   TableBody,
@@ -10,8 +10,9 @@ import {
   TableCaption,
 } from "@/components/ui/table";
 import Link from "next/link";
-import posts from "@/data/posts";
+import { fetchPosts } from "@/data/posts";
 import classNames from "classnames";
+import { Post } from "@/types/posts";
 
 interface PostsTableProps {
   limit?: number;
@@ -24,7 +25,18 @@ const PostsTable = ({ limit = 10, title }: PostsTableProps) => {
   );
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [posts, setPosts] = useState<Post[]>([]); // Estado para almacenar los posts cargados
 
+  // Cargar los posts cuando el componente se monta
+  useEffect(() => {
+    const loadPosts = async () => {
+      const fetchedPosts = await fetchPosts();
+      setPosts(fetchedPosts);
+    };
+    loadPosts();
+  }, []);
+
+  // Ordenar los posts cargados
   const sortedPosts = [...posts].sort(
     (a, b) =>
       new Date(b.D_FE_EMI_DE).getTime() - new Date(a.D_FE_EMI_DE).getTime()
@@ -33,7 +45,6 @@ const PostsTable = ({ limit = 10, title }: PostsTableProps) => {
   const filteredPosts = sortedPosts.filter((post) => {
     const matchesStatus =
       filterStatus === "ALL" || post.RESULT_STATUS === filterStatus;
-
     const matchesSearch =
       post.D_NUM_DOC?.toString()
         .toLowerCase()
@@ -120,24 +131,21 @@ const PostsTable = ({ limit = 10, title }: PostsTableProps) => {
         <TableBody>
           {paginatedPosts.map((post, index) => (
             <TableRow
-              key={post.INVOICE_ID}
+              key={post.ID}
               className={classNames(
                 "transition-shadow duration-200 hover:shadow-xl hover:bg-gray-50",
-                {
-                  "bg-gray-100": index % 2 === 0,
-                  "bg-white": index % 2 !== 0,
-                }
+                { "bg-gray-100": index % 2 === 0, "bg-white": index % 2 !== 0 }
               )}
             >
               <TableCell>{post.D_NUM_DOC}</TableCell>
               <TableCell className="hidden md:table-cell">
-                {post.RESULT_STATUS}
+                {post.STATUS}
               </TableCell>
               <TableCell className="text-center hidden md:table-cell">
                 {post.D_FE_EMI_DE}
               </TableCell>
               <TableCell className="text-center">
-                <Link href={`/posts/edit/${post.INVOICE_ID}`}>
+                <Link href={`/posts/edit/${post.ID}`}>
                   <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-xs">
                     Editar
                   </button>

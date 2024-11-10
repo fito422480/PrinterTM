@@ -4,10 +4,10 @@ import type { NextRequest } from "next/server";
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Obtener la cookie de autenticación (si es que la has guardado en una cookie después de iniciar sesión con Azure AD)
+  // Obtener la cookie de autenticación
   const isAuthenticated = request.cookies.get("isAuthenticated");
 
-  // Si el usuario no está autenticado y no está en la página de /auth, lo rediriges
+  // Si el usuario no está autenticado y no está en la página de /auth, lo redirige a /auth
   if (!isAuthenticated && pathname !== "/auth") {
     return NextResponse.redirect(new URL("/auth", request.url));
   }
