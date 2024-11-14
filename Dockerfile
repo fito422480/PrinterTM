@@ -16,7 +16,7 @@ COPY . .
 RUN npm run build
 
 # Producción
-FROM node:18-alpine AS runner
+FROM node:23-alpine AS runner
 
 # Se establece el directorio de trabajo en /app
 WORKDIR /app
