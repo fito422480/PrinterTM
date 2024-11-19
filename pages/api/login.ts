@@ -39,7 +39,7 @@ export default async function handler(
         `isAuthenticated=true; Path=/; HttpOnly; Secure; Max-Age=86400`
       );
 
-      // También puedes almacenar el token de acceso en el cliente si es necesario
+      // También se puede almacenar el token de acceso en el cliente si es necesario
       res.status(200).json({ access_token: data.access_token });
     } else {
       const errorData = await response.json();

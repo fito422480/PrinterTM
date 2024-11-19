@@ -138,6 +138,70 @@ const PostEditPage = ({ params }: PostEditPageProps) => {
     } else {
       console.error("Factura no encontrada para actualizar.");
     }
+
+    try {
+      // Definir la URL del backend con la constante del entorno, con un fallback en localhost
+      const apiUrl = `${
+        process.env.URL_BACKEND || "http://localhost:9500/invoices"
+      }/${id}`;
+
+      // Configurar el cuerpo de la solicitud PUT
+      const requestBody = JSON.stringify({
+        xml_received: data.xmlData, // Enviar el XML actualizado
+      });
+
+      // Realizar la solicitud a la API
+      const response = await fetch(apiUrl, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: requestBody,
+      });
+
+      // Verificar si la respuesta fue exitosa
+      if (response.ok) {
+        const successMessage = `El documento ${data.invoiceNumber} ha sido actualizado correctamente.`;
+        toast({
+          title: "Documento actualizado",
+          description: successMessage,
+        });
+
+        // Redirigir al usuario después de una actualización exitosa
+        router.push("/posts");
+      } else {
+        // Procesar errores si la respuesta no es exitosa
+        const errorData = await response.json();
+        const errorMessage =
+          errorData.message || "No se pudo actualizar el documento.";
+
+        console.error("Error al actualizar el documento:", errorData);
+
+        toast({
+          title: "Error",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      // Manejo de errores relacionados con la red o excepciones inesperadas
+      const errorMessage =
+        error.message ||
+        "No se pudo conectar con el servidor. Inténtalo más tarde.";
+
+      console.error("Error de red al actualizar el documento:", error);
+
+      toast({
+        title: "Error de conexión",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      // Acciones que deben ejecutarse siempre, como limpiar estados
+      console.log(
+        "Finalizó la ejecución del intento de actualizar el documento."
+      );
+    }
   };
 
   //const builder = new xml2js.Builder();
