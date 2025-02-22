@@ -37,7 +37,7 @@ const Sidebar = () => {
           </CommandItem>
           <CommandItem>
             <ListChecks className="mr-2 h-4 w-4" />
-            <Link href="#">Procesar en Batch</Link>
+            <Link href="/batch">Procesar en Batch</Link>
           </CommandItem>
         </CommandGroup>
         <CommandSeparator />
