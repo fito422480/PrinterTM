@@ -77,3 +77,16 @@
   background-size: 1rem 1rem;
   animation: progress-stripes 1s linear infinite;
 }
+
+@layer utilities {
+  .progress-bar-transition {
+    transition: width 0.3s ease-in-out;
+  }
+}
+
+@layer components {
+  .progress-green > div {
+    background-color: #22c55e; /* Color verde-500 de Tailwind */
+    transition: width 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}

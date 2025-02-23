@@ -1,15 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Papa from "papaparse";
 import { 
   Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow 
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export default function UploadCSV() {
-  const [data, setData] = useState<any[]>([]);
+  interface CSVData {
+    [key: string]: string | number | boolean | null;
+  }
+
+  const [data, setData] = useState<CSVData[]>([]);
   const [columns, setColumns] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -26,7 +30,7 @@ export default function UploadCSV() {
       Papa.parse(csv, {
         header: true,
         skipEmptyLines: true,
-        complete: (result: Papa.ParseResult<any>) => {
+        complete: (result: Papa.ParseResult<CSVData>) => {
           if (result.data.length > 0) {
             setColumns(Object.keys(result.data[0]));
             setData(result.data);
@@ -60,8 +64,7 @@ export default function UploadCSV() {
           body: JSON.stringify({ data: batch }),
         });
 
-        // Calculo suavizado del progreso
-        const newProgress = ((i + 1) / totalBatches) * 100;
+        const newProgress = Math.min(100, ((i + 1) / totalBatches) * 100);
         setProgress(newProgress);
       }
 
@@ -70,8 +73,10 @@ export default function UploadCSV() {
       setMessage("❌ Error al procesar los datos");
       setProgress(0);
     } finally {
-      setLoading(false);
-      setTimeout(() => setProgress(0), 2000);
+      setTimeout(() => {
+        setLoading(false);
+        setProgress(0);
+      }, 2000);
     }
   };
 
@@ -87,7 +92,7 @@ export default function UploadCSV() {
         <Button 
           onClick={handleProcessData} 
           disabled={loading} 
-          className="bg-primary text-white hover:bg-primary/90"
+          className="bg-primary text-white hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? (
             <span className="flex items-center">
@@ -97,23 +102,29 @@ export default function UploadCSV() {
         </Button>
       </div>
 
-      <div className="w-full max-w-md my-4">
-        {progress > 0 && (
-          <Progress value={progress} className="h-3 bg-gray-200">
+      <Dialog open={loading}>
+        <DialogContent className="flex flex-col items-center justify-center p-6">
+          <DialogHeader>
+            <DialogTitle>Procesando datos...</DialogTitle>
+          </DialogHeader>
+          <div className="w-full bg-gray-200 rounded-full dark:bg-gray-700 mt-4">
             <div 
-              className={`h-full bg-green-500 rounded-full transition-all duration-300 ease-out ${
-                progress < 100 ? "striped-animation" : ""
-              }`}
+              className="bg-primary text-xs font-medium text-blue-100 text-center p-0.5 leading-none rounded-full transition-all duration-300"
               style={{ width: `${progress}%` }}
-            />
-          </Progress>
-        )}
-      </div>
-
-      <div className="min-h-6 mt-2 text-sm text-center">
-        {loading && "⏳ Procesando datos..."}
-        {message}
-      </div>
+            >
+              {progress.toFixed(0)}%
+            </div>
+          </div>
+{/*           <p className="mt-2 text-sm text-muted-foreground">
+            {progress.toFixed(0)}% completado
+          </p> */}
+          {message && (
+            <p className={`text-sm mt-2 ${message.startsWith("✅") ? "text-green-600" : "text-red-600"}`}>
+              {message}
+            </p>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {data.length > 0 && (
         <div className="w-full overflow-x-auto mt-6">
@@ -123,9 +134,9 @@ export default function UploadCSV() {
             </TableCaption>
             <TableHeader className="bg-gradient-to-r from-primary to-primary/80">
               <TableRow>
-                {columns.map((col, index) => (
+                {columns.map((col) => (
                   <TableHead 
-                    key={index} 
+                    key={col} 
                     className="text-white font-bold text-center px-4 py-3"
                   >
                     {col.toUpperCase()}
@@ -136,12 +147,12 @@ export default function UploadCSV() {
             <TableBody>
               {data.map((row, index) => (
                 <TableRow 
-                  key={index} 
+                  key={row.id ? String(row.id) : `row-${index}`} 
                   className="hover:bg-gray-50 even:bg-gray-100"
                 >
-                  {columns.map((col, i) => (
+                  {columns.map((col) => (
                     <TableCell 
-                      key={i} 
+                      key={col} 
                       className="text-center px-4 py-2 text-sm"
                     >
                       {row[col]}

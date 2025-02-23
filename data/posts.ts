@@ -1,4 +1,4 @@
-import { Post } from "@/types/posts";
+import type { Post } from "@/types/posts";
 
 export const fetchPosts = async (): Promise<Post[]> => {
   const controller = new AbortController();
