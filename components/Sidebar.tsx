@@ -16,7 +16,7 @@ import {
   CreditCard,
   Settings,
   User,
-  ListChecks,
+  Upload,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -36,8 +36,8 @@ const Sidebar = () => {
             <Link href="/posts">Facturas</Link>
           </CommandItem>
           <CommandItem>
-            <ListChecks className="mr-2 h-4 w-4" />
-            <Link href="/batch">Procesar en Batch</Link>
+            <Upload className="mr-2 h-4 w-4" />
+            <Link href="/batch">Subir archivo de facturas</Link>
           </CommandItem>
         </CommandGroup>
         <CommandSeparator />
