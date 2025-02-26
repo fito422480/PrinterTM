@@ -1,192 +1,193 @@
 "use client";
 
-import { useState } from "react";
-import Papa from "papaparse";
-import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
+import { useState, useRef } from "react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import {
+  Table,
+  TableHeader,
+  TableRow,
+  TableCell,
+  TableBody,
+  TableHead,
+} from "@/components/ui/table";
+import Papa from "papaparse";
+import { z, ZodError } from "zod";
+
+const DocumentoSchema = z.object({
+  ID: z.string().uuid(),
+  TRACEID: z.string().uuid(),
+  TIMBRADO: z.coerce.number().int().positive(),
+  ESTABLECIMIENTO: z.coerce.number().int().positive(),
+  PUNTOEXPEDICION: z.coerce.number().int().positive(),
+  FECHAEMISION: z.string().regex(/^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}$/),
+  XML: z.string().trim(),
+  FECHACREACION: z.string().regex(/^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}$/),
+});
 
 interface UploadCSVProps {
   title?: string;
 }
+
+const PREVIEW_LIMIT = 100;
+const ERROR_LIMIT = 50;
+
 export default function UploadCSV({ title }: UploadCSVProps) {
-  interface CSVData {
-    [key: string]: string | number | boolean | null;
-  }
-
-  const [data, setData] = useState<CSVData[]>([]);
-  const [columns, setColumns] = useState<string[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [previewData, setPreviewData] = useState<any[]>([]);
+  const [failedDocuments, setFailedDocuments] = useState<any[]>([]);
   const [progress, setProgress] = useState(0);
-  const [message, setMessage] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+  const processedCount = useRef(0);
+  const fileSize = useRef(1);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = ({ target }) => {
-      if (!target?.result) return;
-      const csv = target.result.toString();
-      Papa.parse(csv, {
-        header: true,
-        skipEmptyLines: true,
-        complete: (result: Papa.ParseResult<CSVData>) => {
-          if (result.data.length > 0) {
-            setColumns(Object.keys(result.data[0]));
-            setData(result.data);
-          }
-        },
-      });
-    };
-    reader.readAsText(file);
-  };
-
-  const handleProcessData = async () => {
-    if (data.length === 0) {
-      setMessage("❌ No hay datos para procesar");
-      return;
-    }
-
-    setLoading(true);
+    setIsUploading(true);
+    setPreviewData([]);
+    setFailedDocuments([]);
     setProgress(0);
-    setMessage("");
 
-    try {
-      const batchSize = 50;
-      const totalBatches = Math.ceil(data.length / batchSize);
+    fileSize.current = file.size;
+    processedCount.current = 0;
 
-      for (let i = 0; i < totalBatches; i++) {
-        const batch = data.slice(i * batchSize, (i + 1) * batchSize);
+    let preview: any[] = [];
+    let failed: any[] = [];
 
-        await fetch("/api/oracle-insert", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ data: batch }),
-        });
-
-        const newProgress = Math.min(100, ((i + 1) / totalBatches) * 100);
-        setProgress(newProgress);
-      }
-
-      setMessage("✅ Datos procesados con éxito");
-    } catch (error) {
-      setMessage("❌ Error al procesar los datos");
-      setProgress(0);
-    } finally {
-      setTimeout(() => {
-        setLoading(false);
-        setProgress(0);
-      }, 2000);
-    }
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      worker: true,
+      step: (row) => {
+        try {
+          const parsed = DocumentoSchema.parse(row.data);
+          processedCount.current++;
+          if (preview.length < PREVIEW_LIMIT) preview.push(parsed);
+        } catch (err) {
+          if (err instanceof ZodError && failed.length < ERROR_LIMIT) {
+            failed.push({
+              doc: row.data,
+              errors: err.issues.map((i) => i.message),
+            });
+          }
+        }
+        setProgress(
+          Math.round((processedCount.current / fileSize.current) * 100)
+        );
+      },
+      complete: () => {
+        setPreviewData(preview);
+        setFailedDocuments(failed);
+        setIsUploading(false);
+      },
+      error: (error) => {
+        console.error("Error al procesar CSV:", error);
+        setIsUploading(false);
+      },
+    });
   };
 
   return (
-    <div className="mt-10">
-      <h3 className="text-2xl mb-4 font-semibold">
-        {title ? title : "Subir Archivo de Facturas"}
-      </h3>
-      <div className="flex flex-col items-center p-6">
-        <div className="flex gap-4 mb-4">
+    <div className="container mx-auto p-6">
+      <h1 className="text-2xl font-bold mb-6">
+        {title || "Carga de Documentos"}
+      </h1>
+
+      <div className="mb-6">
+        <label className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded cursor-pointer inline-block">
+          Seleccionar Archivo CSV
           <input
             type="file"
-            accept=".csv"
+            accept=".csv,.tsv"
             onChange={handleFileUpload}
-            className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-primary/90"
+            className="hidden"
           />
-          <Button
-            onClick={handleProcessData}
-            disabled={loading}
-            className="bg-primary text-white hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? (
-              <span className="flex items-center">
-                <span className="mr-2">🔄</span> Procesando...
-              </span>
-            ) : (
-              "Procesar"
-            )}
-          </Button>
-        </div>
+        </label>
+      </div>
 
-        <Dialog open={loading}>
-          <DialogContent className="flex flex-col items-center justify-center p-6">
-            <DialogHeader>
-              <DialogTitle>Procesando datos...</DialogTitle>
-            </DialogHeader>
-            <div className="w-full bg-gray-200 rounded-full dark:bg-gray-100 mt-4">
-              <div
-                className="bg-primary text-xs font-medium text-blue-100 text-center p-0.5 leading-none rounded-full transition-all duration-300"
-                style={{ width: `${progress}%` }}
-              >
-                {progress.toFixed(0)}%
-              </div>
-            </div>
-            <p className="mt-2 text-sm text-muted-foreground">completado</p>
-            {message && (
-              <p
-                className={`text-sm mt-2 ${
-                  message.startsWith("✅") ? "text-green-600" : "text-red-600"
-                }`}
-              >
-                {message}
-              </p>
-            )}
-          </DialogContent>
-        </Dialog>
+      {/* Dialogo de progreso */}
+      <Dialog open={isUploading}>
+        <DialogContent className="p-6">
+          <DialogHeader>
+            <DialogTitle>Procesando archivo...</DialogTitle>
+          </DialogHeader>
+          <Progress value={progress} className="w-full h-3" />
+          <p className="text-sm text-gray-600 mt-2">Progreso: {progress}%</p>
+        </DialogContent>
+      </Dialog>
 
-        {data.length > 0 && (
-          <div className="w-full overflow-x-auto mt-6">
-            <Table className="shadow-lg rounded-lg overflow-hidden border">
-              <TableCaption className="text-lg font-medium m-4">
-                📋 Facturas Adjuntas ({data.length} registros)
-              </TableCaption>
-              <TableHeader className="bg-gradient-to-r from-primary to-primary/80">
-                <TableRow>
-                  {columns.map((col) => (
-                    <TableHead
-                      key={col}
-                      className="text-white font-bold text-center px-4 py-3"
-                    >
-                      {col.toUpperCase()}
-                    </TableHead>
-                  ))}
+      {previewData.length > 0 && (
+        <div className="border rounded-lg shadow-md overflow-hidden mt-6">
+          <div className="p-3 bg-gray-100">
+            <p className="text-sm font-medium">
+              Vista Previa ({previewData.length} registros)
+            </p>
+          </div>
+
+          <div className="overflow-x-auto max-h-[500px]">
+            <Table className="w-full border-collapse">
+              <TableHeader className="bg-gray-50">
+                <TableRow className="border-b">
+                  <TableHead className="px-4 py-2 text-left">ID</TableHead>
+                  <TableHead className="px-4 py-2 text-left">TRACEID</TableHead>
+                  <TableHead className="px-4 py-2 text-left">
+                    TIMBRADO
+                  </TableHead>
+                  <TableHead className="px-4 py-2 text-left">
+                    ESTABLECIMIENTO
+                  </TableHead>
+                  <TableHead className="px-4 py-2 text-left">
+                    PUNTO EXP.
+                  </TableHead>
+                  <TableHead className="px-4 py-2 text-left">
+                    FECHA EMISIÓN
+                  </TableHead>
+                  <TableHead className="px-4 py-2 text-left">XML</TableHead>
+                  <TableHead className="px-4 py-2 text-left">
+                    FECHA CREACIÓN
+                  </TableHead>
                 </TableRow>
               </TableHeader>
+
               <TableBody>
-                {data.map((row, index) => (
+                {previewData.map((row, index) => (
                   <TableRow
-                    key={row.id ? String(row.id) : `row-${index}`}
-                    className="hover:bg-gray-50 even:bg-gray-100"
+                    key={index}
+                    className="border-b hover:bg-gray-100 transition"
                   >
-                    {columns.map((col) => (
-                      <TableCell
-                        key={col}
-                        className="text-center px-4 py-2 text-sm"
-                      >
-                        {row[col]}
-                      </TableCell>
-                    ))}
+                    <TableCell className="px-4 py-2">{row.ID}</TableCell>
+                    <TableCell className="px-4 py-2">{row.TRACEID}</TableCell>
+                    <TableCell className="px-4 py-2">{row.TIMBRADO}</TableCell>
+                    <TableCell className="px-4 py-2">
+                      {row.ESTABLECIMIENTO}
+                    </TableCell>
+                    <TableCell className="px-4 py-2">
+                      {row.PUNTOEXPEDICION}
+                    </TableCell>
+                    <TableCell className="px-4 py-2">
+                      {row.FECHAEMISION}
+                    </TableCell>
+                    <TableCell className="px-4 py-2">
+                      {row.XML.substring(0, 50)}...
+                    </TableCell>
+                    <TableCell className="px-4 py-2">
+                      {row.FECHACREACION}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
