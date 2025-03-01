@@ -36,19 +36,17 @@ export default async function handler(
 
     res.status(200).json({ data: JSON.parse(jsonData) });
   } catch (error) {
-    res
-      .status(500)
-      .json({
-        error: "Internal server error",
-        details: (error as Error).message,
-      });
+    res.status(500).json({
+      error: "Internal server error",
+      details: (error as Error).message,
+    });
   }
 }
 
 function processWithWorker(csvPath: string): Promise<string> {
   return new Promise((resolve, reject) => {
     const worker = new Worker(
-      path.join(process.cwd(), "workers", "csvWorker.js"),
+      path.join(process.cwd(), "workers", "csv.worker.ts"),
       {
         workerData: { csvPath },
       }

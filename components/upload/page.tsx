@@ -36,7 +36,7 @@ interface UploadCSVProps {
 }
 
 const PREVIEW_LIMIT = 1000000;
-const ERROR_LIMIT = 50;
+const ERROR_LIMIT = 5000;
 const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB por fragmento
 
 export default function UploadCSV({ title }: UploadCSVProps) {
@@ -91,7 +91,7 @@ export default function UploadCSV({ title }: UploadCSVProps) {
         setCsvProgress(
           Math.min(
             100,
-            Math.round(processedCount.current / (fileSize.current / 100000))
+            Math.round(processedCount.current / (fileSize.current / 1000000))
           )
         );
       },
@@ -190,7 +190,7 @@ export default function UploadCSV({ title }: UploadCSVProps) {
 
       <div className="mb-6 flex justify-center">
         <label className="bg-primary hover:bg-secondary text-white font-bold py-2 px-4 rounded cursor-pointer inline-block">
-          Seleccionar Archivo CSV
+          Seleccionar Archivo
           <input
             type="file"
             accept=".csv,.tsv"
