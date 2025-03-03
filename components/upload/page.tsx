@@ -21,14 +21,19 @@ import Papa from "papaparse";
 import { z, ZodError } from "zod";
 
 const DocumentoSchema = z.object({
-  ID: z.string().uuid(),
-  TRACEID: z.string().uuid(),
-  TIMBRADO: z.coerce.number().int().positive(),
-  ESTABLECIMIENTO: z.coerce.number().int().positive(),
-  PUNTOEXPEDICION: z.coerce.number().int().positive(),
-  FECHAEMISION: z.string().regex(/^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}$/),
-  XML: z.string().trim(),
-  FECHACREACION: z.string().regex(/^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}$/),
+  invoiceId: z.string(),
+  traceId: z.string().uuid(),
+  requestId: z.string().uuid(),
+  customerId: z.string(),
+  invoiceOrigin: z.string(),
+  dNumTimb: z.string(),
+  dEst: z.string(),
+  dPunExp: z.string(),
+  dNumDoc: z.string(),
+  dFeEmiDe: z.string(),
+  xmlReceived: z.string().trim(),
+  creationDate: z.string(),
+  status: z.string(),
 });
 
 interface UploadCSVProps {
@@ -89,10 +94,7 @@ export default function UploadCSV({ title }: UploadCSVProps) {
           }
         }
         setCsvProgress(
-          Math.min(
-            100,
-            Math.round(processedCount.current / (fileSize.current / 1000000))
-          )
+          Math.round((processedCount.current / (file.size / CHUNK_SIZE)) * 100)
         );
       },
       complete: () => {
@@ -284,28 +286,22 @@ export default function UploadCSV({ title }: UploadCSVProps) {
                     key={index}
                     className="border-b hover:bg-gray-100 transition-all duration-300 ease-in-out"
                   >
-                    <TableCell className="px-4 py-2">{row.ID}</TableCell>
-                    <TableCell className="px-4 py-2">{row.TRACEID}</TableCell>
-                    <TableCell className="px-4 py-2">{row.TIMBRADO}</TableCell>
-                    <TableCell className="px-4 py-2">
-                      {row.ESTABLECIMIENTO}
-                    </TableCell>
-                    <TableCell className="px-4 py-2">
-                      {row.PUNTOEXPEDICION}
-                    </TableCell>
-                    <TableCell className="px-4 py-2">
-                      {row.FECHAEMISION}
-                    </TableCell>
+                    <TableCell className="px-4 py-2">{row.invoiceId}</TableCell>
+                    <TableCell className="px-4 py-2">{row.traceId}</TableCell>
+                    <TableCell className="px-4 py-2">{row.dNumTimb}</TableCell>
+                    <TableCell className="px-4 py-2">{row.dEst}</TableCell>
+                    <TableCell className="px-4 py-2">{row.dPunExp}</TableCell>
+                    <TableCell className="px-4 py-2">{row.dFeEmiDe}</TableCell>
                     <TableCell
                       className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis"
                       style={{ maxWidth: "300px" }}
                     >
-                      {row.XML.length > 50
-                        ? `${row.XML.substring(0, 50)}...`
-                        : row.XML}
+                      {row.xmlReceived.length > 50
+                        ? `${row.xmlReceived.substring(0, 50)}...`
+                        : row.xmlReceived}
                     </TableCell>
                     <TableCell className="px-4 py-2">
-                      {row.FECHACREACION}
+                      {row.creationDate}
                     </TableCell>
                   </TableRow>
                 ))}
