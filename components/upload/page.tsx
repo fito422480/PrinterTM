@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -17,8 +18,11 @@ import {
   TableBody,
   TableHead,
 } from "@/components/ui/table";
-import Papa from "papaparse";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import Papa, { ParseResult } from "papaparse";
 import { z, ZodError } from "zod";
+import { Loader2 } from "lucide-react";
 
 const DocumentoSchema = z.object({
   invoiceId: z.string(),
@@ -36,153 +40,278 @@ const DocumentoSchema = z.object({
   status: z.string(),
 });
 
+type Documento = z.infer<typeof DocumentoSchema>;
+type ErrorValidacion = { doc: any; errors: string[] };
+
 interface UploadCSVProps {
   title?: string;
+  apiUrl?: string;
 }
 
 const PREVIEW_LIMIT = 1000000;
 const ERROR_LIMIT = 5000;
-const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB por fragmento
+const MAX_CONCURRENT_REQUESTS = 5;
+const MAX_RETRIES = 3;
 
-export default function UploadCSV({ title }: UploadCSVProps) {
-  const [previewData, setPreviewData] = useState<any[]>([]);
-  const [failedDocuments, setFailedDocuments] = useState<any[]>([]);
+export default function UploadCSV({
+  title,
+  apiUrl = process.env.URL_BACKEND || "http://localhost:9500/invoices",
+}: UploadCSVProps) {
+  const [previewData, setPreviewData] = useState<Documento[]>([]);
+  const [failedDocuments, setFailedDocuments] = useState<ErrorValidacion[]>([]);
   const [csvProgress, setCsvProgress] = useState(0);
   const [isParsing, setIsParsing] = useState(false);
-
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploadingToAPI, setIsUploadingToAPI] = useState(false);
+  const [apiErrors, setApiErrors] = useState<
+    Array<{ doc: Documento; error: string }>
+  >([]);
+  const [successCount, setSuccessCount] = useState(0);
+  const [showApiErrorsDialog, setShowApiErrorsDialog] = useState(false);
 
-  const processedCount = useRef(0);
-  const fileSize = useRef(1);
-
+  const totalRows = useRef(0);
+  const processedRows = useRef(0);
+  const abortController = useRef<AbortController | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const recordsPerPage = 10;
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setSelectedFile(file);
-    setIsParsing(true);
-    setPreviewData([]);
-    setFailedDocuments([]);
-    setCsvProgress(0);
-
-    fileSize.current = file.size;
-    processedCount.current = 0;
-
-    let preview: any[] = [];
-    let failed: any[] = [];
-
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      worker: true,
-      step: (row) => {
-        try {
-          const parsed = DocumentoSchema.parse(row.data);
-          processedCount.current++;
-          if (preview.length < PREVIEW_LIMIT) preview.push(parsed);
-        } catch (err) {
-          if (err instanceof ZodError && failed.length < ERROR_LIMIT) {
-            failed.push({
-              doc: row.data,
-              errors: err.issues.map((i) => i.message),
-            });
-          }
-        }
-        setCsvProgress(
-          Math.round((processedCount.current / (file.size / CHUNK_SIZE)) * 100)
-        );
-      },
-      complete: () => {
-        setPreviewData(preview);
-        setFailedDocuments(failed);
-        setIsParsing(false);
-      },
-      error: (error) => {
-        console.error("Error al procesar CSV:", error);
-        setIsParsing(false);
-      },
-    });
-  };
-
-  const createUploadWorker = () => {
-    const code = `
-      self.onmessage = async function(e) {
-        const { file, chunkSize, uploadUrl } = e.data;
-        const totalSize = file.size;
-        let offset = 0;
-        while (offset < totalSize) {
-          const chunk = file.slice(offset, offset + chunkSize);
-          const formData = new FormData();
-          formData.append("chunk", chunk);
-          formData.append("offset", offset.toString());
-          try {
-            const response = await fetch(uploadUrl, { method: "POST", body: formData });
-            if (!response.ok) {
-              self.postMessage({ error: "Error uploading chunk at offset " + offset });
-              return;
-            }
-            offset += chunkSize;
-            self.postMessage({ progress: Math.round((offset / totalSize) * 100) });
-          } catch (err) {
-            self.postMessage({ error: err.message });
-            return;
-          }
-        }
-        self.postMessage({ done: true });
-      };
-    `;
-    const blob = new Blob([code], { type: "application/javascript" });
-    const worker = new Worker(URL.createObjectURL(blob));
-    return worker;
-  };
-
-  const handleUploadToAPI = () => {
-    if (!selectedFile) return;
-    setIsUploadingToAPI(true);
-    setUploadProgress(0);
-
-    const uploadUrl = "https://your.api/upload";
-    const worker = createUploadWorker();
-    worker.postMessage({
-      file: selectedFile,
-      chunkSize: CHUNK_SIZE,
-      uploadUrl,
-    });
-
-    worker.onmessage = (e) => {
-      const data = e.data;
-      if (data.progress !== undefined) {
-        setUploadProgress(data.progress);
-      }
-      if (data.error) {
-        console.error("Error en worker de subida:", data.error);
-        setIsUploadingToAPI(false);
-        worker.terminate();
-      }
-      if (data.done) {
-        setUploadProgress(100);
-        setIsUploadingToAPI(false);
-        worker.terminate();
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (abortController.current) {
+        abortController.current.abort();
       }
     };
+  }, []);
+
+  const countRows = useCallback((file: File): Promise<number> => {
+    return new Promise((resolve, reject) => {
+      let rowCount = 0;
+      Papa.parse(file, {
+        fastMode: true,
+        header: true,
+        skipEmptyLines: true,
+        step: () => rowCount++,
+        complete: () => resolve(rowCount),
+        error: reject,
+      });
+    });
+  }, []);
+
+  const handleFileUpload = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      if (!file.name.endsWith(".csv") && !file.name.endsWith(".tsv")) {
+        alert("Solo se permiten archivos CSV o TSV.");
+        return;
+      }
+
+      try {
+        setIsParsing(true);
+        setSelectedFile(file);
+        setPreviewData([]);
+        setFailedDocuments([]);
+        setApiErrors([]);
+        setCsvProgress(0);
+        setSuccessCount(0);
+
+        totalRows.current = await countRows(file);
+        processedRows.current = 0;
+
+        let preview: Documento[] = [];
+        let failed: ErrorValidacion[] = [];
+
+        Papa.parse(file, {
+          header: true,
+          skipEmptyLines: true,
+          worker: true,
+          step: (row: ParseResult<any>) => {
+            try {
+              const parsed = DocumentoSchema.parse(row.data);
+              if (preview.length < PREVIEW_LIMIT) preview.push(parsed);
+            } catch (err) {
+              if (err instanceof ZodError && failed.length < ERROR_LIMIT) {
+                failed.push({
+                  doc: row.data,
+                  errors: err.issues.map(
+                    (i) => `${i.path.join(".")}: ${i.message}`
+                  ),
+                });
+              }
+            }
+
+            processedRows.current++;
+            setCsvProgress(
+              Math.round((processedRows.current / totalRows.current) * 100)
+            );
+          },
+          complete: () => {
+            setPreviewData(preview);
+            setFailedDocuments(failed);
+            setIsParsing(false);
+            setCurrentPage(1); // Reset to first page when new data is loaded
+          },
+          error: (error) => {
+            console.error("Error al procesar CSV:", error);
+            setIsParsing(false);
+          },
+        });
+      } catch (error) {
+        console.error("Error al contar filas:", error);
+        setIsParsing(false);
+      }
+    },
+    [countRows]
+  );
+
+  const processBatch = async (
+    batch: Documento[],
+    apiEndpoint: string
+  ): Promise<number> => {
+    // Create a new AbortController for this batch
+    abortController.current = new AbortController();
+
+    const results = await Promise.allSettled(
+      batch.map(async (doc) => {
+        let retries = 0;
+        while (retries < MAX_RETRIES) {
+          try {
+            const response = await fetch(apiEndpoint, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Accept: "*/*",
+              },
+              body: JSON.stringify(doc),
+              signal: abortController.current?.signal,
+            });
+
+            // Check for successful status code (201 Created)
+            if (!response.ok) {
+              const errorData = await response.json().catch(() => ({}));
+              const errorMessage =
+                errorData.message ||
+                `Error: ${response.status} ${response.statusText}`;
+              throw new Error(errorMessage);
+            }
+
+            return { success: true, doc };
+          } catch (error) {
+            // If aborted, don't retry
+            if (error instanceof DOMException && error.name === "AbortError") {
+              throw error;
+            }
+
+            retries++;
+            // Only consider it a failure after all retries
+            if (retries >= MAX_RETRIES) {
+              setApiErrors((prev) => [
+                ...prev,
+                {
+                  doc,
+                  error:
+                    error instanceof Error
+                      ? error.message
+                      : `Error desconocido (intentos: ${MAX_RETRIES})`,
+                },
+              ]);
+              return { success: false, doc };
+            }
+
+            // Wait before retrying (exponential backoff)
+            await new Promise((resolve) =>
+              setTimeout(resolve, 500 * Math.pow(2, retries))
+            );
+          }
+        }
+        return { success: false, doc };
+      })
+    );
+
+    // Count successful requests
+    const successful = results.filter(
+      (result) => result.status === "fulfilled" && result.value.success
+    ).length;
+
+    return successful;
   };
 
+  const handleUploadToAPI = useCallback(async () => {
+    if (!previewData.length) return;
+
+    setIsUploadingToAPI(true);
+    setUploadProgress(0);
+    setApiErrors([]);
+    setSuccessCount(0);
+
+    const totalDocs = previewData.length;
+    let processedDocs = 0;
+
+    try {
+      // Process in batches
+      for (let i = 0; i < previewData.length; i += MAX_CONCURRENT_REQUESTS) {
+        const batch = previewData.slice(i, i + MAX_CONCURRENT_REQUESTS);
+        const successful = await processBatch(batch, apiUrl);
+
+        processedDocs += successful;
+        setSuccessCount((prev) => prev + successful);
+        setUploadProgress(Math.round((processedDocs / totalDocs) * 100));
+      }
+    } catch (error) {
+      console.error("Error durante la carga de la API:", error);
+      // If it was not an abort error, show in UI
+      if (!(error instanceof DOMException && error.name === "AbortError")) {
+        setApiErrors((prev) => [
+          ...prev,
+          {
+            doc: { invoiceId: "global-error" } as Documento,
+            error: error instanceof Error ? error.message : String(error),
+          },
+        ]);
+      }
+    } finally {
+      setIsUploadingToAPI(false);
+
+      // Show API errors dialog if there were errors
+      if (apiErrors.length > 0) {
+        setShowApiErrorsDialog(true);
+      }
+    }
+  }, [previewData, apiUrl]);
+
+  const cancelUpload = useCallback(() => {
+    if (abortController.current) {
+      abortController.current.abort();
+    }
+    setIsUploadingToAPI(false);
+  }, []);
+
   const totalPages = Math.ceil(previewData.length / recordsPerPage);
+  const currentRecords = previewData.slice(
+    (currentPage - 1) * recordsPerPage,
+    currentPage * recordsPerPage
+  );
 
   const changePage = (page: number) => {
     if (page < 1 || page > totalPages) return;
     setCurrentPage(page);
   };
 
-  const currentRecords = previewData.slice(
-    (currentPage - 1) * recordsPerPage,
-    currentPage * recordsPerPage
-  );
+  const downloadFailedRecords = () => {
+    const content = Papa.unparse(failedDocuments.map((item) => item.doc));
+    const blob = new Blob([content], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "registros_fallidos.csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="container mx-auto p-6">
@@ -202,60 +331,146 @@ export default function UploadCSV({ title }: UploadCSVProps) {
         </label>
       </div>
 
-      <Dialog open={isParsing}>
-        <DialogContent className="p-6">
+      {selectedFile && (
+        <div className="text-center mb-4">
+          <p className="text-sm text-gray-600">
+            Archivo: <span className="font-medium">{selectedFile.name}</span>(
+            {(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
+          </p>
+        </div>
+      )}
+
+      <Dialog
+        open={isParsing}
+        onOpenChange={(open) => !open && setIsParsing(false)}
+      >
+        <DialogContent className="p-10">
           <DialogHeader>
             <DialogTitle>Procesando archivo CSV...</DialogTitle>
           </DialogHeader>
-          <div className="progress-bar-container relative">
+          <div className="relative w-full h-6 bg-gray-200 rounded-md overflow-hidden">
+            {/* Barra de progreso */}
             <div
-              className="progress-bar-transition"
-              style={{
-                width: `${csvProgress}%`,
-                height: "100%",
-                borderRadius: "10px",
-              }}
+              className="h-full bg-green-500 transition-all duration-300 ease-in-out progress-bar"
+              style={{ width: `${csvProgress}%` }}
             ></div>
-            <div className="progress-bar-text">Progreso: {csvProgress}%</div>
+            {/* Texto centrado */}
+            <div className="absolute inset-0 flex items-center justify-center text-white text-sm font-semibold">
+              {csvProgress}% completado ({processedRows.current} de{" "}
+              {totalRows.current} registros)
+            </div>
           </div>
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isUploadingToAPI}>
-        <DialogContent className="p-6">
+      <Dialog
+        open={isUploadingToAPI}
+        onOpenChange={(open) => !open && cancelUpload()}
+      >
+        <DialogContent className="p-10">
           <DialogHeader>
-            <DialogTitle>Subiendo archivo a la API...</DialogTitle>
+            <DialogTitle>Procesando las Facturas...</DialogTitle>
           </DialogHeader>
-          <div className="progress-bar-container relative">
+          <div className="relative w-full h-6 bg-gray-200 rounded-md overflow-hidden">
+            {/* Barra de progreso */}
             <div
-              className="progress-bar-transition"
-              style={{
-                width: `${uploadProgress}%`,
-                height: "100%",
-                borderRadius: "10px",
-              }}
+              className="h-full bg-green-500 transition-all duration-300 ease-in-out progress-bar"
+              style={{ width: `${uploadProgress}%` }}
             ></div>
-            <div className="progress-bar-text">Progreso: {uploadProgress}%</div>
+            {/* Texto centrado */}
+            <div className="absolute inset-0 flex items-center justify-center text-white text-sm font-semibold">
+              {uploadProgress}% completado ({successCount} de{" "}
+              {previewData.length} registros)
+            </div>
           </div>
         </DialogContent>
       </Dialog>
-      <Button
-        onClick={handleUploadToAPI}
-        className="bg-primary hover:bg-secondary text-white font-bold py-2 px-4 rounded mt-6"
-        disabled={isUploadingToAPI || !selectedFile}
-      >
-        Procesar las facturas
-      </Button>
+
+      <Dialog open={showApiErrorsDialog} onOpenChange={setShowApiErrorsDialog}>
+        <DialogContent className="max-w-3xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle>Errores de Envío</DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="h-[300px] mt-4">
+            <div className="space-y-2">
+              {apiErrors.map((error, idx) => (
+                <Alert variant="destructive" key={idx}>
+                  <AlertDescription>
+                    <span className="font-semibold">
+                      {error.doc.invoiceId || "ID no disponible"}
+                    </span>
+                    : {error.error}
+                  </AlertDescription>
+                </Alert>
+              ))}
+            </div>
+          </ScrollArea>
+          <DialogFooter>
+            <Button onClick={() => setShowApiErrorsDialog(false)}>
+              Cerrar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <div className="text-center mb-6">
+        <Button
+          onClick={handleUploadToAPI}
+          className="bg-primary hover:bg-secondary text-white font-bold py-2 px-4 rounded"
+          disabled={isUploadingToAPI || previewData.length === 0}
+        >
+          {isUploadingToAPI ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Enviando...
+            </>
+          ) : (
+            "Procesar Facturas"
+          )}
+        </Button>
+      </div>
+
+      {successCount > 0 && !isUploadingToAPI && (
+        <div className="mb-6">
+          <Alert variant="default" className="bg-green-50 border-green-200">
+            <AlertDescription className="text-green-800">
+              Se procesaron correctamente {successCount} facturas.
+              {apiErrors.length > 0 && ` Hubo ${apiErrors.length} errores.`}
+            </AlertDescription>
+          </Alert>
+        </div>
+      )}
 
       {previewData.length > 0 && (
         <div className="border rounded-lg shadow-md overflow-hidden mt-6">
-          <div className="p-3 bg-gray-100">
+          <div className="p-3 bg-gray-100 flex justify-between items-center">
             <p className="text-sm font-medium">
               Vista Previa ({previewData.length} registros)
             </p>
+            <div className="flex space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => changePage(currentPage - 1)}
+                disabled={currentPage <= 1}
+              >
+                Anterior
+              </Button>
+              <span className="px-2 py-1 text-sm">
+                Página {currentPage} de {totalPages || 1}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => changePage(currentPage + 1)}
+                disabled={currentPage >= totalPages}
+              >
+                Siguiente
+              </Button>
+            </div>
           </div>
 
-          <div className="overflow-x-auto max-h-[500px]">
+          <ScrollArea className="h-[500px]">
             <Table className="w-full border-collapse">
               <TableHeader className="bg-gray-50">
                 <TableRow className="bg-primary text-black dark:text-white">
@@ -284,7 +499,7 @@ export default function UploadCSV({ title }: UploadCSVProps) {
                 {currentRecords.map((row, index) => (
                   <TableRow
                     key={index}
-                    className="border-b hover:bg-gray-100 transition-all duration-300 ease-in-out"
+                    className="border-b hover:bg-gray-100 transition-colors"
                   >
                     <TableCell className="px-4 py-2">{row.invoiceId}</TableCell>
                     <TableCell className="px-4 py-2">{row.traceId}</TableCell>
@@ -292,13 +507,8 @@ export default function UploadCSV({ title }: UploadCSVProps) {
                     <TableCell className="px-4 py-2">{row.dEst}</TableCell>
                     <TableCell className="px-4 py-2">{row.dPunExp}</TableCell>
                     <TableCell className="px-4 py-2">{row.dFeEmiDe}</TableCell>
-                    <TableCell
-                      className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis"
-                      style={{ maxWidth: "300px" }}
-                    >
-                      {row.xmlReceived.length > 50
-                        ? `${row.xmlReceived.substring(0, 50)}...`
-                        : row.xmlReceived}
+                    <TableCell className="px-4 py-2 max-w-[300px] truncate">
+                      {row.xmlReceived}
                     </TableCell>
                     <TableCell className="px-4 py-2">
                       {row.creationDate}
@@ -307,38 +517,47 @@ export default function UploadCSV({ title }: UploadCSVProps) {
                 ))}
               </TableBody>
             </Table>
-          </div>
+          </ScrollArea>
         </div>
       )}
 
       {failedDocuments.length > 0 && (
         <div className="border rounded-lg shadow-md mt-6">
-          <div className="p-3 bg-red-100">
+          <div className="p-3 bg-red-100 flex justify-between items-center">
             <p className="text-sm font-medium text-red-800">
-              Errores ({failedDocuments.length} registros)
+              Errores de Validación ({failedDocuments.length} registros)
             </p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="bg-white"
+              onClick={downloadFailedRecords}
+            >
+              Descargar registros fallidos
+            </Button>
           </div>
-          <Table className="w-full border-collapse">
-            <TableHeader className="bg-gray-50">
-              <TableRow>
-                <TableHead className="px-4 py-2">Documento</TableHead>
-                <TableHead className="px-4 py-2">Errores</TableHead>
-              </TableRow>
-            </TableHeader>
-
-            <TableBody>
-              {failedDocuments.map((doc, idx) => (
-                <TableRow key={idx} className="border-b">
-                  <TableCell className="px-4 py-2">
-                    {JSON.stringify(doc.doc)}
-                  </TableCell>
-                  <TableCell className="px-4 py-2">
-                    {doc.errors.join(", ")}
-                  </TableCell>
+          <ScrollArea className="h-[300px]">
+            <Table className="w-full border-collapse">
+              <TableHeader className="bg-gray-50">
+                <TableRow>
+                  <TableHead className="px-4 py-2">Documento</TableHead>
+                  <TableHead className="px-4 py-2">Errores</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {failedDocuments.map((doc, idx) => (
+                  <TableRow key={idx} className="border-b">
+                    <TableCell className="px-4 py-2 max-w-[300px] truncate">
+                      {JSON.stringify(doc.doc)}
+                    </TableCell>
+                    <TableCell className="px-4 py-2 text-red-600">
+                      {doc.errors.join(", ")}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </ScrollArea>
         </div>
       )}
     </div>
