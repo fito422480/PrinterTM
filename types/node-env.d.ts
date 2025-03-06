@@ -8,5 +8,7 @@ declare namespace NodeJS {
     KEYCLOAK_URL: string;
     KEYCLOAK_AUTH: string;
     URL_BACKEND: string;
+    URL_BACKEND_STATS: string;
+    URL_BACKEND_ANALYTICS: string;
   }
 }

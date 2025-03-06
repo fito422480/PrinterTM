@@ -1,62 +1,105 @@
-import { NextApiRequest, NextApiResponse } from "next";
+// workers/csv.worker.ts
+import { parentPort, workerData } from "worker_threads";
 import fs from "fs";
 import path from "path";
-import { Worker } from "worker_threads";
-import { promisify } from "util";
+import Papa from "papaparse";
+import { z } from "zod";
 
-const writeFileAsync = promisify(fs.writeFile);
-const unlinkAsync = promisify(fs.unlink);
+const { csvPath } = workerData;
 
-const uploadDir = path.join(process.cwd(), "uploads");
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir);
-}
+// Schema for validation
+const DocumentoSchema = z.object({
+  invoiceId: z.string(),
+  traceId: z.string().uuid(),
+  requestId: z.string().uuid(),
+  customerId: z.string(),
+  invoiceOrigin: z.string(),
+  dNumTimb: z.string(),
+  dEst: z.string(),
+  dPunExp: z.string(),
+  dNumDoc: z.string(),
+  dFeEmiDe: z.string(),
+  xmlReceived: z.string().trim(),
+  creationDate: z.string(),
+  status: z.string(),
+});
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
+type Documento = z.infer<typeof DocumentoSchema>;
 
+async function processCSV() {
   try {
-    const { fileContent, fileName } = req.body;
-    if (!fileContent || !fileName) {
-      return res.status(400).json({ error: "Missing file data" });
-    }
+    const csvContent = fs.readFileSync(csvPath, "utf8");
+    const results: Documento[] = [];
+    const errors: any[] = [];
 
-    const csvPath = path.join(uploadDir, fileName);
-    await writeFileAsync(csvPath, fileContent);
+    // Parse CSV file
+    return new Promise<string>((resolve, reject) => {
+      interface ParsedResult {
+        data: Record<string, any>;
+      }
 
-    const jsonPath = await processWithWorker(csvPath);
-    const jsonData = fs.readFileSync(jsonPath, "utf-8");
-    await unlinkAsync(csvPath);
-    await unlinkAsync(jsonPath);
+      interface ValidationError {
+        row: Record<string, any>;
+        errors: string[];
+      }
 
-    res.status(200).json({ data: JSON.parse(jsonData) });
-  } catch (error) {
-    res.status(500).json({
-      error: "Internal server error",
-      details: (error as Error).message,
+      Papa.parse<ParsedResult>(csvContent, {
+        header: true,
+        skipEmptyLines: true,
+        step: (result: ParsedResult) => {
+          try {
+            const parsedData: Documento = DocumentoSchema.parse(result.data);
+            results.push(parsedData);
+          } catch (error) {
+            if (error instanceof z.ZodError) {
+              errors.push({
+                row: result.data,
+                errors: error.issues.map(
+                  (i) => `${i.path.join(".")}: ${i.message}`
+                ),
+              } as ValidationError);
+            } else {
+              errors.push({
+                row: result.data,
+                errors: ["Unknown validation error"],
+              } as ValidationError);
+            }
+          }
+        },
+        complete: () => {
+          // Write processed data to a temporary file
+          const jsonPath: string = path.join(
+            path.dirname(csvPath),
+            `${path.basename(csvPath, path.extname(csvPath))}.json`
+          );
+          fs.writeFileSync(
+            jsonPath,
+            JSON.stringify({
+              valid: results,
+              errors: errors,
+              totalValid: results.length,
+              totalErrors: errors.length,
+            })
+          );
+          resolve(jsonPath);
+        },
+        error: (error: Error) => {
+          reject(new Error(`Error parsing CSV: ${error.message}`));
+        },
+      });
     });
+  } catch (error) {
+    throw new Error(
+      `Worker error: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
 
-function processWithWorker(csvPath: string): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const worker = new Worker(
-      path.join(process.cwd(), "workers", "csv.worker.ts"),
-      {
-        workerData: { csvPath },
-      }
-    );
-
-    worker.on("message", (jsonPath) => resolve(jsonPath));
-    worker.on("error", reject);
-    worker.on("exit", (code) => {
-      if (code !== 0)
-        reject(new Error(`Worker stopped with exit code ${code}`));
-    });
+// Process the CSV and send the result back to the main thread
+processCSV()
+  .then((jsonPath) => {
+    parentPort?.postMessage(jsonPath);
+  })
+  .catch((error) => {
+    parentPort?.postMessage({ error: error.message });
   });
-}

@@ -12,4 +12,6 @@ export interface Post {
   XML_RECEIVED: string;
   CREATION_DATE: string;
   STATUS: string;
+  RESULT_STATUS: string;
+  RESULT_MESSAGE: string;
 }
