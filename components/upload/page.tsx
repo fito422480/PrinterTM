@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -26,8 +26,8 @@ import { Loader2 } from "lucide-react";
 
 const DocumentoSchema = z.object({
   invoiceId: z.string(),
-  traceId: z.string().uuid(),
-  requestId: z.string().uuid(),
+  traceId: z.string(),
+  requestId: z.string(),
   customerId: z.string(),
   invoiceOrigin: z.string(),
   dNumTimb: z.string(),
@@ -69,12 +69,17 @@ export default function UploadCSV({
   >([]);
   const [successCount, setSuccessCount] = useState(0);
   const [showApiErrorsDialog, setShowApiErrorsDialog] = useState(false);
+  const [filterText, setFilterText] = useState("");
+  const [sortConfig, setSortConfig] = useState<{
+    key: keyof Documento;
+    direction: "ascending" | "descending";
+  } | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [recordsPerPage, setRecordsPerPage] = useState(10);
 
   const totalRows = useRef(0);
   const processedRows = useRef(0);
   const abortController = useRef<AbortController | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const recordsPerPage = 10;
 
   // Cleanup on unmount
   useEffect(() => {
@@ -157,11 +162,13 @@ export default function UploadCSV({
           error: (error) => {
             console.error("Error al procesar CSV:", error);
             setIsParsing(false);
+            alert(`Error al procesar el archivo CSV: ${error.message}`);
           },
         });
       } catch (error) {
         console.error("Error al contar filas:", error);
         setIsParsing(false);
+        alert(`Error al contar las filas del archivo: ${error.message}`);
       }
     },
     [countRows]
@@ -171,7 +178,6 @@ export default function UploadCSV({
     batch: Documento[],
     apiEndpoint: string
   ): Promise<number> => {
-    // Create a new AbortController for this batch
     abortController.current = new AbortController();
 
     const results = await Promise.allSettled(
@@ -189,7 +195,6 @@ export default function UploadCSV({
               signal: abortController.current?.signal,
             });
 
-            // Check for successful status code (201 Created)
             if (!response.ok) {
               const errorData = await response.json().catch(() => ({}));
               const errorMessage =
@@ -200,13 +205,11 @@ export default function UploadCSV({
 
             return { success: true, doc };
           } catch (error) {
-            // If aborted, don't retry
             if (error instanceof DOMException && error.name === "AbortError") {
               throw error;
             }
 
             retries++;
-            // Only consider it a failure after all retries
             if (retries >= MAX_RETRIES) {
               setApiErrors((prev) => [
                 ...prev,
@@ -221,7 +224,6 @@ export default function UploadCSV({
               return { success: false, doc };
             }
 
-            // Wait before retrying (exponential backoff)
             await new Promise((resolve) =>
               setTimeout(resolve, 500 * Math.pow(2, retries))
             );
@@ -231,7 +233,6 @@ export default function UploadCSV({
       })
     );
 
-    // Count successful requests
     const successful = results.filter(
       (result) => result.status === "fulfilled" && result.value.success
     ).length;
@@ -251,7 +252,6 @@ export default function UploadCSV({
     let processedDocs = 0;
 
     try {
-      // Process in batches
       for (let i = 0; i < previewData.length; i += MAX_CONCURRENT_REQUESTS) {
         const batch = previewData.slice(i, i + MAX_CONCURRENT_REQUESTS);
         const successful = await processBatch(batch, apiUrl);
@@ -262,7 +262,6 @@ export default function UploadCSV({
       }
     } catch (error) {
       console.error("Error durante la carga de la API:", error);
-      // If it was not an abort error, show in UI
       if (!(error instanceof DOMException && error.name === "AbortError")) {
         setApiErrors((prev) => [
           ...prev,
@@ -275,7 +274,6 @@ export default function UploadCSV({
     } finally {
       setIsUploadingToAPI(false);
 
-      // Show API errors dialog if there were errors
       if (apiErrors.length > 0) {
         setShowApiErrorsDialog(true);
       }
@@ -289,11 +287,47 @@ export default function UploadCSV({
     setIsUploadingToAPI(false);
   }, []);
 
-  const totalPages = Math.ceil(previewData.length / recordsPerPage);
-  const currentRecords = previewData.slice(
+  const sortedData = useMemo(() => {
+    let sortableData = [...previewData];
+    if (sortConfig !== null) {
+      sortableData.sort((a, b) => {
+        if (a[sortConfig.key] < b[sortConfig.key]) {
+          return sortConfig.direction === "ascending" ? -1 : 1;
+        }
+        if (a[sortConfig.key] > b[sortConfig.key]) {
+          return sortConfig.direction === "ascending" ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return sortableData;
+  }, [previewData, sortConfig]);
+
+  const filteredData = useMemo(() => {
+    return sortedData.filter((item) => {
+      return Object.values(item).some((value) =>
+        String(value).toLowerCase().includes(filterText.toLowerCase())
+      );
+    });
+  }, [sortedData, filterText]);
+
+  const totalPages = Math.ceil(filteredData.length / recordsPerPage);
+  const currentRecords = filteredData.slice(
     (currentPage - 1) * recordsPerPage,
     currentPage * recordsPerPage
   );
+
+  const requestSort = (key: keyof Documento) => {
+    let direction: "ascending" | "descending" = "ascending";
+    if (
+      sortConfig &&
+      sortConfig.key === key &&
+      sortConfig.direction === "ascending"
+    ) {
+      direction = "descending";
+    }
+    setSortConfig({ key, direction });
+  };
 
   const changePage = (page: number) => {
     if (page < 1 || page > totalPages) return;
@@ -349,12 +383,10 @@ export default function UploadCSV({
             <DialogTitle>Procesando archivo CSV...</DialogTitle>
           </DialogHeader>
           <div className="relative w-full h-6 bg-gray-200 rounded-md overflow-hidden">
-            {/* Barra de progreso */}
             <div
               className="h-full bg-green-500 transition-all duration-300 ease-in-out progress-bar"
               style={{ width: `${csvProgress}%` }}
             ></div>
-            {/* Texto centrado */}
             <div className="absolute inset-0 flex items-center justify-center text-white text-sm font-semibold">
               {csvProgress}% completado ({processedRows.current} de{" "}
               {totalRows.current} registros)
@@ -372,12 +404,10 @@ export default function UploadCSV({
             <DialogTitle>Procesando las Facturas...</DialogTitle>
           </DialogHeader>
           <div className="relative w-full h-6 bg-gray-200 rounded-md overflow-hidden">
-            {/* Barra de progreso */}
             <div
               className="h-full bg-green-500 transition-all duration-300 ease-in-out progress-bar"
               style={{ width: `${uploadProgress}%` }}
             ></div>
-            {/* Texto centrado */}
             <div className="absolute inset-0 flex items-center justify-center text-white text-sm font-semibold">
               {uploadProgress}% completado ({successCount} de{" "}
               {previewData.length} registros)
@@ -474,23 +504,93 @@ export default function UploadCSV({
             <Table className="w-full border-collapse">
               <TableHeader className="bg-gray-50">
                 <TableRow className="bg-primary text-black dark:text-white">
-                  <TableHead className="px-4 py-2 text-left">ID</TableHead>
-                  <TableHead className="px-4 py-2 text-left">TRACEID</TableHead>
-                  <TableHead className="px-4 py-2 text-left">
-                    TIMBRADO
+                  <TableHead
+                    className="px-4 py-2 text-left cursor-pointer"
+                    onClick={() => requestSort("invoiceId")}
+                  >
+                    ID{" "}
+                    {sortConfig?.key === "invoiceId"
+                      ? sortConfig.direction === "ascending"
+                        ? "↑"
+                        : "↓"
+                      : ""}
                   </TableHead>
-                  <TableHead className="px-4 py-2 text-left">
-                    ESTABLECIMIENTO
+                  <TableHead
+                    className="px-4 py-2 text-left cursor-pointer"
+                    onClick={() => requestSort("traceId")}
+                  >
+                    TRACEID{" "}
+                    {sortConfig?.key === "traceId"
+                      ? sortConfig.direction === "ascending"
+                        ? "↑"
+                        : "↓"
+                      : ""}
                   </TableHead>
-                  <TableHead className="px-4 py-2 text-left">
-                    PUNTO EXP.
+                  <TableHead
+                    className="px-4 py-2 text-left cursor-pointer"
+                    onClick={() => requestSort("dNumTimb")}
+                  >
+                    TIMBRADO{" "}
+                    {sortConfig?.key === "dNumTimb"
+                      ? sortConfig.direction === "ascending"
+                        ? "↑"
+                        : "↓"
+                      : ""}
                   </TableHead>
-                  <TableHead className="px-4 py-2 text-left">
-                    FECHA EMISIÓN
+                  <TableHead
+                    className="px-4 py-2 text-left cursor-pointer"
+                    onClick={() => requestSort("dEst")}
+                  >
+                    ESTABLECIMIENTO{" "}
+                    {sortConfig?.key === "dEst"
+                      ? sortConfig.direction === "ascending"
+                        ? "↑"
+                        : "↓"
+                      : ""}
                   </TableHead>
-                  <TableHead className="px-4 py-2 text-left">XML</TableHead>
-                  <TableHead className="px-4 py-2 text-left">
-                    FECHA CREACIÓN
+                  <TableHead
+                    className="px-4 py-2 text-left cursor-pointer"
+                    onClick={() => requestSort("dPunExp")}
+                  >
+                    PUNTO EXP.{" "}
+                    {sortConfig?.key === "dPunExp"
+                      ? sortConfig.direction === "ascending"
+                        ? "↑"
+                        : "↓"
+                      : ""}
+                  </TableHead>
+                  <TableHead
+                    className="px-4 py-2 text-left cursor-pointer"
+                    onClick={() => requestSort("dFeEmiDe")}
+                  >
+                    FECHA EMISIÓN{" "}
+                    {sortConfig?.key === "dFeEmiDe"
+                      ? sortConfig.direction === "ascending"
+                        ? "↑"
+                        : "↓"
+                      : ""}
+                  </TableHead>
+                  <TableHead
+                    className="px-4 py-2 text-left cursor-pointer"
+                    onClick={() => requestSort("xmlReceived")}
+                  >
+                    XML{" "}
+                    {sortConfig?.key === "xmlReceived"
+                      ? sortConfig.direction === "ascending"
+                        ? "↑"
+                        : "↓"
+                      : ""}
+                  </TableHead>
+                  <TableHead
+                    className="px-4 py-2 text-left cursor-pointer"
+                    onClick={() => requestSort("creationDate")}
+                  >
+                    FECHA CREACIÓN{" "}
+                    {sortConfig?.key === "creationDate"
+                      ? sortConfig.direction === "ascending"
+                        ? "↑"
+                        : "↓"
+                      : ""}
                   </TableHead>
                 </TableRow>
               </TableHeader>
