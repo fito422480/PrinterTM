@@ -5,6 +5,10 @@ import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import BackButton from "@/components/BackButton";
 
+// Clave para guardar directamente la imagen de perfil activa
+const ACTIVE_PROFILE_IMAGE_KEY = "active_profile_image";
+const USER_DATA_KEY = "user_data";
+
 // Definición del tipo para el usuario
 interface User {
   id: string;
@@ -246,6 +250,20 @@ export default function ProfilePage() {
     }
   }, []);
 
+  // Guardar datos del usuario en localStorage para las iniciales en el avatar
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(
+        USER_DATA_KEY,
+        JSON.stringify({
+          nombre: usuario.nombre,
+          username: usuario.username,
+          email: usuario.email,
+        })
+      );
+    }
+  }, [usuario.nombre, usuario.username, usuario.email]);
+
   // Mostrar toast
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ show: true, message, type });
@@ -333,6 +351,15 @@ export default function ProfilePage() {
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
+
+    // Eliminar la imagen activa
+    if (typeof window !== "undefined") {
+      localStorage.removeItem(ACTIVE_PROFILE_IMAGE_KEY);
+
+      // Disparar evento y actualizar timestamp
+      window.dispatchEvent(new Event("profileUpdated"));
+      localStorage.setItem("profile_last_updated", Date.now().toString());
+    }
   };
 
   // Ver imágenes subidas y abrir modal
@@ -369,6 +396,15 @@ export default function ProfilePage() {
       imagenUrl: image.path,
     }));
 
+    // Guardar la imagen directamente para acceso rápido
+    if (typeof window !== "undefined") {
+      localStorage.setItem(ACTIVE_PROFILE_IMAGE_KEY, image.dataUrl);
+
+      // Disparar evento y actualizar timestamp
+      window.dispatchEvent(new Event("profileUpdated"));
+      localStorage.setItem("profile_last_updated", Date.now().toString());
+    }
+
     setModalOpen(false);
     showToast("Imagen seleccionada", "success");
   };
@@ -394,6 +430,15 @@ export default function ProfilePage() {
         ...prev,
         imagenUrl: ImageStorage.DEFAULT_IMAGE,
       }));
+
+      // Eliminar la imagen activa
+      if (typeof window !== "undefined") {
+        localStorage.removeItem(ACTIVE_PROFILE_IMAGE_KEY);
+
+        // Disparar evento
+        window.dispatchEvent(new Event("profileUpdated"));
+        localStorage.setItem("profile_last_updated", Date.now().toString());
+      }
     }
 
     // Actualizar uso de almacenamiento
@@ -428,6 +473,15 @@ export default function ProfilePage() {
       imagenUrl: ImageStorage.DEFAULT_IMAGE,
     }));
 
+    // Eliminar la imagen activa
+    if (typeof window !== "undefined") {
+      localStorage.removeItem(ACTIVE_PROFILE_IMAGE_KEY);
+
+      // Disparar evento
+      window.dispatchEvent(new Event("profileUpdated"));
+      localStorage.setItem("profile_last_updated", Date.now().toString());
+    }
+
     setStorageInfoOpen(false);
     showToast("Todas las imágenes fueron eliminadas", "success");
   };
@@ -459,6 +513,15 @@ export default function ProfilePage() {
       // Actualizar uso de almacenamiento
       const used = ImageStorage.getTotalStorageUsed();
       setStorageUsed(used);
+
+      // Guardar la imagen activa directamente para acceso rápido
+      if (typeof window !== "undefined") {
+        localStorage.setItem(ACTIVE_PROFILE_IMAGE_KEY, compressedDataUrl);
+
+        // Disparar evento para notificar a otros componentes
+        window.dispatchEvent(new Event("profileUpdated"));
+        localStorage.setItem("profile_last_updated", Date.now().toString());
+      }
 
       return savedImage;
     } catch (error) {
