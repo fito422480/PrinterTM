@@ -168,7 +168,11 @@ export default function UploadCSV({
       } catch (error) {
         console.error("Error al contar filas:", error);
         setIsParsing(false);
-        alert(`Error al contar las filas del archivo: ${error.message}`);
+        if (error instanceof Error) {
+          alert(`Error al contar las filas del archivo: ${error.message}`);
+        } else {
+          alert("Error al contar las filas del archivo.");
+        }
       }
     },
     [countRows]

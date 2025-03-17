@@ -95,6 +95,7 @@ const PostEditPage = ({ params }: PostEditPageProps) => {
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      id: post?.ID || "",
       invoiceNumber: post?.D_NUM_DOC || "",
       xmlData: post?.XML_RECEIVED || "",
       date: post?.D_FE_EMI_DE || "",
@@ -105,6 +106,7 @@ const PostEditPage = ({ params }: PostEditPageProps) => {
   useEffect(() => {
     if (post) {
       form.reset({
+        id: post.ID,
         invoiceNumber: post.D_NUM_DOC,
         xmlData: post.XML_RECEIVED,
         date: post.D_FE_EMI_DE,
@@ -124,6 +126,7 @@ const PostEditPage = ({ params }: PostEditPageProps) => {
     if (updatedPostIndex !== -1) {
       postsArray[updatedPostIndex] = {
         ...postsArray[updatedPostIndex],
+        ID: data.ID,
         D_NUM_DOC: data.invoiceNumber,
         XML_RECEIVED: data.xmlData,
         STATUS: data.status,
@@ -147,7 +150,8 @@ const PostEditPage = ({ params }: PostEditPageProps) => {
 
       // Configurar el cuerpo de la solicitud PUT
       const requestBody = JSON.stringify({
-        xml_received: data.xmlData, // Enviar el XML actualizado
+        xml_received: data.xmlData,
+        id: data.id, // Enviar el XML actualizado
       });
 
       // Realizar la solicitud a la API

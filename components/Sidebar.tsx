@@ -37,7 +37,7 @@ const Sidebar = () => {
           </CommandItem>
           <CommandItem>
             <Upload className="mr-2 h-4 w-4" />
-            <Link href="/batch">Subir archivo de facturas</Link>
+            <Link href="/batch">Facturas en batch</Link>
           </CommandItem>
         </CommandGroup>
         <CommandSeparator />
@@ -49,7 +49,7 @@ const Sidebar = () => {
           </CommandItem>
           <CommandItem>
             <CreditCard className="mr-2 h-4 w-4" />
-            <span>Billing</span>
+            <Link href="/timbrado">Timbrado</Link>
             <CommandShortcut>⌘B</CommandShortcut>
           </CommandItem>
           <CommandItem>
