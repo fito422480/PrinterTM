@@ -314,10 +314,7 @@ export default function TimbradosPage() {
                   key={timbrado.id}
                   className={classNames(
                     "transition-shadow duration-200 hover:shadow-xl hover:bg-gray-50",
-                    {
-                      "bg-gray-100": index % 2 === 0,
-                      "bg-white": index % 2 !== 0,
-                    }
+                    index % 2 === 0 ? "bg-gray-100" : "bg-white"
                   )}
                 >
                   <TableCell>{timbrado.numero}</TableCell>

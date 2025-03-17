@@ -7,7 +7,6 @@ const PostsPage = () => {
     <>
       <BackButton text="Atrás" link="/" />
       <PostsTable />
-      {/* <PostsPagination /> */}
     </>
   );
 };

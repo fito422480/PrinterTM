@@ -44,7 +44,7 @@ const Sidebar = () => {
         <CommandGroup heading="Configuración">
           <CommandItem>
             <User className="mr-2 h-4 w-4" />
-            <span>Perfiles</span>
+            <Link href="/profile">Perfil</Link>
             <CommandShortcut>⌘P</CommandShortcut>
           </CommandItem>
           <CommandItem>
