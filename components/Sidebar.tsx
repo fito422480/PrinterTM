@@ -49,7 +49,7 @@ const Sidebar = () => {
           </CommandItem>
           <CommandItem>
             <CreditCard className="mr-2 h-4 w-4" />
-            <Link href="/timbrado">Timbrado</Link>
+            <Link href="/stamping">Timbrado</Link>
             <CommandShortcut>⌘B</CommandShortcut>
           </CommandItem>
           <CommandItem>
