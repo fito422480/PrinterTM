@@ -15,7 +15,7 @@ import {
 import ThemeToggler from "@/components/ThemeToggler";
 import { useTheme } from "next-themes";
 // Importamos nuestro componente UserAvatar mejorado
-import UserAvatar from "@/components/UserAvatar";
+import UserAvatar from "./userAvatar";
 
 const Navbar = () => {
   const { theme, systemTheme } = useTheme();

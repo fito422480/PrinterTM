@@ -1,0 +1,56 @@
+version: "3.8"
+
+services:
+  nextjs-app:
+    container_name: nextjs-frontend
+    build:
+      context: .
+      dockerfile: Dockerfile.front
+      args:
+        - NEXT_PUBLIC_KEYCLOAK_URL=http://q-caas-wk-02.sec.telecel.net.py:8080
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - KEYCLOAK_CLIENT_ID=nextjs-client
+      - KEYCLOAK_CLIENT_SECRET=MEUKNrIoK44p8IoiVqqTdEzvm2o6wIve
+      - KEYCLOAK_ISSUER=http://q-caas-wk-02.sec.telecel.net.py:8080/realms/MFS_ACCESS_INVOICES
+      - KEYCLOAK_URL=http://q-caas-wk-02.sec.telecel.net.py:8080
+      - KEYCLOAK_AUTH=http://q-caas-wk-02.sec.telecel.net.py:8080/realms/MFS_ACCESS_INVOICES/protocol/openid-connect/ext/ciba/auth
+      - KEYCLOAK_REALM=MFS_ACCESS_INVOICES
+      - KEYCLOAK_USER=testuser
+      - KEYCLOAK_PASSWORD=@Mfs_Invoices_2024!
+      # Mantener las URLs como localhost:9500 para comunicarse con el backend ya existente
+      - URL_BACKEND=http://host.docker.internal:9500/invoices
+      - URL_BACKEND_STATS=http://host.docker.internal:9500/invoice/stats
+      - URL_BACKEND_ANALYTICS=http://host.docker.internal:9500/invoice/analytics
+      - UPLOAD_DIR=/app/uploads
+      - NEXT_PUBLIC_MAX_FILE_SIZE=10737418240
+      - CONCURRENT_WORKERS=4
+    volumes:
+      - nextjs_uploads:/app/uploads
+    # Configuración extra para acceder al host desde el contenedor
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:3000",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  default:
+    name: nextjs-network
+    driver: bridge
+
+volumes:
+  nextjs_uploads:
