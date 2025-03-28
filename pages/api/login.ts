@@ -36,7 +36,7 @@ export default async function handler(
       // Configuración de la cookie `isAuthenticated` con las opciones necesarias
       res.setHeader(
         "Set-Cookie",
-        "isAuthenticated=true; Path=/; HttpOnly; Secure; Max-Age=86400"
+        "isAuthenticated=true; Path=/; HttpOnly; Max-Age=86400"
       );
 
       // También se puede almacenar el token de acceso en el cliente si es necesario
