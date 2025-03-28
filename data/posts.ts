@@ -5,8 +5,7 @@ export const fetchPosts = async (): Promise<Post[]> => {
   const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 segundos de timeout
 
   try {
-    const backendUrl =
-      process.env.URL_BACKEND || "http://localhost:9500/invoices";
+    const backendUrl = `${process.env.NEXT_PUBLIC_URL_BACKEND}`;
     if (!backendUrl) {
       throw new Error("La URL del backend no está configurada.");
     }

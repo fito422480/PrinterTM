@@ -1,10 +1,10 @@
 "use client";
+import AnalyticsChart from "@/components/dashboard/AnalyticsChart";
 import DashboardCard from "@/components/dashboard/DashboardCard";
 import PostsTable from "@/components/posts/PostsTable";
-import AnalyticsChart from "@/components/dashboard/AnalyticsChart";
-import { Send, CopyX, ListChecks, CircleX } from "lucide-react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
-import { useEffect, useState, useCallback } from "react";
+import { CircleX, CopyX, ListChecks, Send } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 
 export default function Home() {
   const [data, setData] = useState({
@@ -18,15 +18,16 @@ export default function Home() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch(
-        process.env.URL_BACKEND || "http://localhost:9500/invoices/stats",
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const apiUrl = `${process.env.NEXT_PUBLIC_URL_BACKEND_STATS}`;
+      if (!apiUrl) {
+        throw new Error("La URL del backend no está configurada.");
+      }
+      const response = await fetch(apiUrl, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
       if (!response.ok)
         throw new Error(`HTTP error! Status: ${response.status}`);
       const result = await response.json();

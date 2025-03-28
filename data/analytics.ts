@@ -5,15 +5,13 @@ export const fetchAnalytics = async (): Promise<AnalyticsItem[]> => {
   const timeoutId = setTimeout(() => controller.abort(), 5000); // Timeout de 5s
 
   try {
-    const backendUrl =
-      process.env.URL_BACKEND_ANALYTICS ||
-      "http://localhost:9500/invoices/analytics";
+    const apiUrl = `${process.env.NEXT_PUBLIC_URL_BACKEND_ANALYTICS}`;
 
-    if (!backendUrl) {
+    if (!apiUrl) {
       throw new Error("La URL del backend no está configurada.");
     }
 
-    const response = await fetch(backendUrl, {
+    const response = await fetch(apiUrl, {
       headers: {
         "Content-Type": "application/json",
       },

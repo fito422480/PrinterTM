@@ -1,28 +1,27 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect, useMemo } from "react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Table,
+  TableBody,
+  TableCell,
+  TableHead,
   TableHeader,
   TableRow,
-  TableCell,
-  TableBody,
-  TableHead,
 } from "@/components/ui/table";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import Papa, { ParseResult } from "papaparse";
-import { z, ZodError } from "zod";
 import { Loader2 } from "lucide-react";
+import Papa, { ParseResult } from "papaparse";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { z, ZodError } from "zod";
 
 const DocumentoSchema = z.object({
   invoiceId: z.string(),
@@ -55,7 +54,7 @@ const MAX_RETRIES = 3;
 
 export default function UploadCSV({
   title,
-  apiUrl = process.env.URL_BACKEND || "http://localhost:9500/invoices",
+  apiUrl = `${process.env.NEXT_PUBLIC_URL_BACKEND}`,
 }: UploadCSVProps) {
   const [previewData, setPreviewData] = useState<Documento[]>([]);
   const [failedDocuments, setFailedDocuments] = useState<ErrorValidacion[]>([]);
