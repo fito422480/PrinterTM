@@ -37,24 +37,24 @@ const Sidebar = () => {
           </CommandItem>
           <CommandItem>
             <Upload className="mr-2 h-4 w-4" />
-            <Link href="/batch">Subir archivo de facturas</Link>
+            <Link href="/batch">Facturas en batch</Link>
           </CommandItem>
         </CommandGroup>
         <CommandSeparator />
         <CommandGroup heading="Configuración">
           <CommandItem>
             <User className="mr-2 h-4 w-4" />
-            <span>Perfiles</span>
+            <Link href="/profile">Perfil</Link>
             <CommandShortcut>⌘P</CommandShortcut>
           </CommandItem>
           <CommandItem>
             <CreditCard className="mr-2 h-4 w-4" />
-            <span>Billing</span>
+            <Link href="/stamping">Timbrado</Link>
             <CommandShortcut>⌘B</CommandShortcut>
           </CommandItem>
           <CommandItem>
             <Settings className="mr-2 h-4 w-4" />
-            <span>Ajustes</span>
+            <Link href="/settings">Ajustes</Link>
             <CommandShortcut>⌘A</CommandShortcut>
           </CommandItem>
         </CommandGroup>

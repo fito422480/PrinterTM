@@ -1,10 +1,13 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import * as z from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Form,
   FormControl,
@@ -13,15 +16,12 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
 
 const formSchema = z.object({
   usuario: z.string().min(1, { message: "Usuario requerido" }),
@@ -59,7 +59,7 @@ const LoginForm = () => {
 
       if (response.ok) {
         // Redirigir al usuario a la página de inicio
-        router.push("/");
+        router.push(window.location.origin);
       } else {
         const errorData = await response.json();
         setErrorMessage(errorData.message);

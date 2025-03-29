@@ -7,6 +7,8 @@ declare namespace NodeJS {
     KEYCLOAK_REALM: string;
     KEYCLOAK_URL: string;
     KEYCLOAK_AUTH: string;
-    URL_BACKEND: string;
+    NEXT_PUBLIC_URL_BACKEND: string;
+    NEXT_PUBLIC_URL_BACKEND_STATS: string;
+    NEXT_PUBLIC_URL_BACKEND_ANALYTICS: string;
   }
 }

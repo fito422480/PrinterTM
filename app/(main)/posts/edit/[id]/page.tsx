@@ -1,33 +1,31 @@
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import xml2js, { Builder } from "xml2js";
 import * as z from "zod";
-import { useRouter } from "next/navigation";
-import xml2js from "xml2js";
-import { Builder } from "xml2js";
 
+import BackButton from "@/components/BackButton";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
-  DialogTrigger,
   DialogContent,
-  DialogHeader,
   DialogFooter,
+  DialogHeader,
 } from "@/components/ui/dialog";
 import {
   Form,
+  FormControl,
   FormField,
   FormItem,
   FormLabel,
-  FormControl,
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import BackButton from "@/components/BackButton";
 import { fetchPosts as posts } from "@/data/posts";
 
 // Esquema de validación usando zod
@@ -95,6 +93,7 @@ const PostEditPage = ({ params }: PostEditPageProps) => {
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      id: post?.ID || "",
       invoiceNumber: post?.D_NUM_DOC || "",
       xmlData: post?.XML_RECEIVED || "",
       date: post?.D_FE_EMI_DE || "",
@@ -105,6 +104,7 @@ const PostEditPage = ({ params }: PostEditPageProps) => {
   useEffect(() => {
     if (post) {
       form.reset({
+        id: post.ID,
         invoiceNumber: post.D_NUM_DOC,
         xmlData: post.XML_RECEIVED,
         date: post.D_FE_EMI_DE,
@@ -124,6 +124,7 @@ const PostEditPage = ({ params }: PostEditPageProps) => {
     if (updatedPostIndex !== -1) {
       postsArray[updatedPostIndex] = {
         ...postsArray[updatedPostIndex],
+        ID: data.ID,
         D_NUM_DOC: data.invoiceNumber,
         XML_RECEIVED: data.xmlData,
         STATUS: data.status,
@@ -141,13 +142,12 @@ const PostEditPage = ({ params }: PostEditPageProps) => {
 
     try {
       // Definir la URL del backend con la constante del entorno, con un fallback en localhost
-      const apiUrl = `${
-        process.env.URL_BACKEND || "http://localhost:9500/invoices"
-      }/${id}`;
+      const apiUrl = `${process.env.NEXT_PUBLIC_URL_BACKEND}/${id}`; 
 
       // Configurar el cuerpo de la solicitud PUT
       const requestBody = JSON.stringify({
-        xml_received: data.xmlData, // Enviar el XML actualizado
+        xml_received: data.xmlData,
+        id: data.id, // Enviar el XML actualizado
       });
 
       // Realizar la solicitud a la API
