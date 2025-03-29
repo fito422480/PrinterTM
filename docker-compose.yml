@@ -2,32 +2,42 @@ version: "3.8"
 
 services:
   nextjs-app:
+    image: frontend:1.0.1
     container_name: nextjs-frontend
-    build:
-      context: .
-      dockerfile: Dockerfile.front
-      args:
-        - NEXT_PUBLIC_KEYCLOAK_URL=http://FITO-SYS:8080
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile.front
+    #   args:
+    #     - KEYCLOAK_URL=http://q-caas-wk-02.sec.telecel.net.py:8080
+    #     - NEXT_PUBLIC_URL_BACKEND=http://localhost:9500/invoices
+    #     - NEXT_PUBLIC_URL_BACKEND_STATS=http://localhost:9500/invoices/invoices/stats
+    #     - NEXT_PUBLIC_URL_BACKEND_ANALYTICS=http://localhost:9500/invoices/analytics
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "3001:3000"
     environment:
       - NODE_ENV=production
       - KEYCLOAK_CLIENT_ID=nextjs-client
-      - KEYCLOAK_CLIENT_SECRET=e74w4EHvY5PItr5j5pBfew7gPgVDoVVb
+      - KEYCLOAK_CLIENT_SECRET=OPec83kvvJGeXdMzSywGGTlRohVOtxee
       - KEYCLOAK_ISSUER=http://q-caas-wk-02.sec.telecel.net.py:8080/realms/MFS_ACCESS_INVOICES
       - KEYCLOAK_URL=http://q-caas-wk-02.sec.telecel.net.py:8080
       - KEYCLOAK_AUTH=http://q-caas-wk-02.sec.telecel.net.py:8080/realms/MFS_ACCESS_INVOICES/protocol/openid-connect/ext/ciba/auth
       - KEYCLOAK_REALM=MFS_ACCESS_INVOICES
       # Mantener las URLs como localhost:9500 para comunicarse con el backend ya existente
-      - NEXT_PUBLIC_URL_BACKEND=http://host.docker.internal:9500/invoices
-      - NEXT_PUBLIC_URL_BACKEND_STATS=http://host.docker.internal:9500/invoice/stats
-      - NEXT_PUBLIC_URL_BACKEND_ANALYTICS=http://host.docker.internal:9500/invoice/analytics
+      - NEXT_PUBLIC_URL_BACKEND=http://localhost:9500/invoices
+      - NEXT_PUBLIC_URL_BACKEND_STATS=http://localhost:9500/invoices/stats
+      - NEXT_PUBLIC_URL_BACKEND_ANALYTICS=http://localhost:9500/invoices/analytics
       - UPLOAD_DIR=/app/uploads
       - NEXT_PUBLIC_MAX_FILE_SIZE=10737418240
       - CONCURRENT_WORKERS=4
     volumes:
-      - nextjs_uploads:/app/uploads
+      - ./entrypoint.sh:/app/entrypoint.sh
+      #- nextjs_uploads:/app/uploads
+    command: >
+      /bin/sh -c '
+      find /app/.next -type f -exec sed -i "s|http://localhost:9500|http://localhost:9500|g" {} + &&
+      npm run start'
+    working_dir: /app
     # Configuración extra para acceder al host desde el contenedor
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -39,12 +49,11 @@ services:
           "--no-verbose",
           "--tries=1",
           "--spider",
-          "http://localhost:3000",
+          "http://localhost:3001",
         ]
       interval: 30s
       timeout: 10s
       retries: 3
-
 networks:
   default:
     name: nextjs-network

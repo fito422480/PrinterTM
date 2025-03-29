@@ -7,39 +7,13 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 
 # Instala las dependencias con --legacy-peer-deps para evitar el error de compatibilidad
-RUN npm ci --legacy-peer-deps
+RUN npm ci --legacy-peer-deps 
 
 # Copia el resto del código fuente al contenedor
 COPY . .
 
 # Compila el proyecto Next.js
 RUN npm run build
-
-# Producción
-FROM node:23-alpine AS runner
-
-# Crea un usuario no-root
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-
-# Se establece el directorio de trabajo en /app
-WORKDIR /app
-
-# Configura los permisos para la carpeta .next
-RUN mkdir -p .next && chown -R nextjs:nodejs .next
-
-# Se copia el `node_modules` y el `build` de la etapa anterior
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
-COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
-COPY --from=builder --chown=nextjs:nodejs /app/public ./public
-
-# Se copia otros archivos necesarios para la aplicación en producción
-COPY --chown=nextjs:nodejs next.config.mjs .
-COPY --chown=nextjs:nodejs package.json .
-COPY --chown=nextjs:nodejs next-env.d.ts .
-
-# Cambia al usuario no-root
-USER nextjs
 
 # Se expone el puerto
 EXPOSE 3000

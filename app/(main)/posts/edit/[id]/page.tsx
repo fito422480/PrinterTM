@@ -142,7 +142,7 @@ const PostEditPage = ({ params }: PostEditPageProps) => {
 
     try {
       // Definir la URL del backend con la constante del entorno, con un fallback en localhost
-      const apiUrl = `${process.env.NEXT_PUBLIC_URL_BACKEND}/${id}`;
+      const apiUrl = `${process.env.NEXT_PUBLIC_URL_BACKEND}/${id}`; 
 
       // Configurar el cuerpo de la solicitud PUT
       const requestBody = JSON.stringify({
