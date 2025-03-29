@@ -2,6 +2,7 @@
 import AnalyticsChart from "@/components/dashboard/AnalyticsChart";
 import DashboardCard from "@/components/dashboard/DashboardCard";
 import PostsTable from "@/components/posts/PostsTable";
+import { getBackendStatsUrl, getRuntimeEnv } from "@/utils/runtime-env";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { CircleX, CopyX, ListChecks, Send } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
@@ -18,7 +19,8 @@ export default function Home() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const apiUrl = `${process.env.NEXT_PUBLIC_URL_BACKEND_STATS}`;
+      const apiUrl =
+        getBackendStatsUrl() || getRuntimeEnv("NEXT_PUBLIC_URL_BACKEND_STATS");
       if (!apiUrl) {
         throw new Error("La URL del backend no está configurada.");
       }

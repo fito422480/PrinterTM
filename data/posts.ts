@@ -1,11 +1,12 @@
 import type { Post } from "@/types/posts";
+import { getBackendUrl,  } from "../next.config.mjs";
 
 export const fetchPosts = async (): Promise<Post[]> => {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 segundos de timeout
 
   try {
-    const backendUrl = `${process.env.NEXT_PUBLIC_URL_BACKEND}`;
+    const backendUrl = getBackendUrl();
     if (!backendUrl) {
       throw new Error("La URL del backend no está configurada.");
     }

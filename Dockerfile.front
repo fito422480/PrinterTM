@@ -7,10 +7,13 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 
 # Instala las dependencias con --legacy-peer-deps para evitar el error de compatibilidad
-RUN npm ci --legacy-peer-deps 
+RUN npm ci --legacy-peer-deps
 
 # Copia el resto del código fuente al contenedor
 COPY . .
+
+# Ejecuta el script para generar el archivo de variables de entorno (esto genera /public/env-config.js)
+RUN node env-config.js
 
 # Compila el proyecto Next.js
 RUN npm run build

@@ -4,17 +4,12 @@ services:
   nextjs-app:
     image: frontend:1.0.1
     container_name: nextjs-frontend
-    # build:
-    #   context: .
-    #   dockerfile: Dockerfile.front
-    #   args:
-    #     - KEYCLOAK_URL=http://q-caas-wk-02.sec.telecel.net.py:8080
-    #     - NEXT_PUBLIC_URL_BACKEND=http://localhost:9500/invoices
-    #     - NEXT_PUBLIC_URL_BACKEND_STATS=http://localhost:9500/invoices/invoices/stats
-    #     - NEXT_PUBLIC_URL_BACKEND_ANALYTICS=http://localhost:9500/invoices/analytics
+    build:
+      context: .
+      dockerfile: Dockerfile.front
     restart: unless-stopped
     ports:
-      - "3001:3000"
+      - "3000:3000"
     environment:
       - NODE_ENV=production
       - KEYCLOAK_CLIENT_ID=nextjs-client
@@ -23,22 +18,19 @@ services:
       - KEYCLOAK_URL=http://q-caas-wk-02.sec.telecel.net.py:8080
       - KEYCLOAK_AUTH=http://q-caas-wk-02.sec.telecel.net.py:8080/realms/MFS_ACCESS_INVOICES/protocol/openid-connect/ext/ciba/auth
       - KEYCLOAK_REALM=MFS_ACCESS_INVOICES
-      # Mantener las URLs como localhost:9500 para comunicarse con el backend ya existente
       - NEXT_PUBLIC_URL_BACKEND=http://localhost:9500/invoices
       - NEXT_PUBLIC_URL_BACKEND_STATS=http://localhost:9500/invoices/stats
       - NEXT_PUBLIC_URL_BACKEND_ANALYTICS=http://localhost:9500/invoices/analytics
-      - UPLOAD_DIR=/app/uploads
       - NEXT_PUBLIC_MAX_FILE_SIZE=10737418240
+      - BASE_URL=http://localhost:9500
+      - UPLOAD_DIR=/app/uploads
       - CONCURRENT_WORKERS=4
     volumes:
       - ./entrypoint.sh:/app/entrypoint.sh
-      #- nextjs_uploads:/app/uploads
-    command: >
-      /bin/sh -c '
-      find /app/.next -type f -exec sed -i "s|http://localhost:9500|http://localhost:9500|g" {} + &&
-      npm run start'
+      - nextjs_uploads:/app/uploads
+    entrypoint: ["/bin/sh", "/app/entrypoint.sh"]
+    command: ["npm", "run", "start"]
     working_dir: /app
-    # Configuración extra para acceder al host desde el contenedor
     extra_hosts:
       - "host.docker.internal:host-gateway"
     healthcheck:
@@ -49,7 +41,7 @@ services:
           "--no-verbose",
           "--tries=1",
           "--spider",
-          "http://localhost:3001",
+          "http://localhost:3000",
         ]
       interval: 30s
       timeout: 10s
