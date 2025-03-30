@@ -25,8 +25,9 @@ services:
       - UPLOAD_DIR=/app/uploads
       - CONCURRENT_WORKERS=4
     volumes:
-      - nextjs_uploads:/app/uploads
+      # Montar el entrypoint script
       - ./entrypoint.sh:/app/entrypoint.sh
+      - nextjs_uploads:/app/uploads
     working_dir: /app
     extra_hosts:
       - "host.docker.internal:host-gateway"

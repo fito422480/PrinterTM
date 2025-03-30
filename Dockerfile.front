@@ -7,7 +7,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 
 # Instalar dependencias
-RUN npm ci --legacy-peer-deps sharp
+RUN npm ci sharp --legacy-peer-deps
 
 # Copiar todo el código fuente
 COPY . .
@@ -25,6 +25,8 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
+
+# Copiar el script entrypoint
 COPY entrypoint.sh /app/entrypoint.sh
 
 # Dar permisos de ejecución al entrypoint

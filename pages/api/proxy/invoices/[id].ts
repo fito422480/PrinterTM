@@ -1,13 +1,12 @@
-// pages/api/proxy/invoices.ts
+// pages/api/proxy/invoices/[id].ts
 import { apiTimeout, backendUrl } from "@/utils/config";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 export const config = {
   api: {
     bodyParser: {
-      sizeLimit: "4mb", // Aumentar esto si es necesario
+      sizeLimit: "4mb",
     },
-    // Aumentar el tiempo de espera de la API (por defecto es 10 segundos)
     externalResolver: true,
   },
 };
@@ -20,14 +19,20 @@ export default async function handler(
     return res.status(500).json({ error: "URL del backend no configurada." });
   }
 
-  // Ya que backendUrl incluye '/invoices', usamos esta URL directamente
-  const targetUrl = backendUrl;
+  const { id } = req.query;
 
-  // Log para depuración
+  if (!id) {
+    return res.status(400).json({ error: "ID de documento requerido" });
+  }
+
+  // Construir la URL con el ID
+  // Como backendUrl ya incluye '/invoices', solo necesitamos añadir el ID
+  const targetUrl = `${backendUrl}/${id}`;
+
   console.log(`Solicitud proxy a: ${targetUrl}, Método: ${req.method}`);
 
   try {
-    // Eliminar encabezados específicos del host que podrían causar problemas
+    // Eliminar encabezados específicos del host
     const headers = { ...req.headers };
     delete headers.host;
     delete headers.connection;
@@ -39,11 +44,9 @@ export default async function handler(
         req.method !== "GET" && req.method !== "HEAD"
           ? JSON.stringify(req.body)
           : undefined,
-      // Agregar un tiempo de espera más largo
       signal: AbortSignal.timeout(apiTimeout || 30000), // 30 segundos de tiempo de espera
     };
 
-    // Registrar la solicitud para depuración
     console.log(`Enviando solicitud con opciones:`, {
       url: targetUrl,
       method: req.method,
@@ -69,8 +72,7 @@ export default async function handler(
 
     return res.status(apiRes.status).send(data);
   } catch (error: any) {
-    console.error("Error al conectar con el servicio de facturas:", error);
-    // Mensaje de error más detallado
+    console.error(`Error al conectar con facturas ID ${id}:`, error);
     return res.status(500).json({
       error: "Error al conectarse a la API de facturas",
       message: error.message,

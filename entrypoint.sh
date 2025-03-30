@@ -1,41 +1,34 @@
-#!/bin/bash
+#!/bin/sh
 
-# Create a directory to store environment variables for client-side
+# Crear directorio para variables de entorno del lado del cliente
 mkdir -p /app/public
 
-# Generate runtime environment config
-echo "Generating runtime environment configuration..."
+# Generar configuración de entorno en tiempo de ejecución
+echo "Generando configuración de entorno en tiempo de ejecución..."
 
-# Start creating the env-config.js with an object
+# Iniciar el objeto de configuración
 echo "window.__ENV = {" > /app/public/env-config.js
 
-# Process all environment variables that start with NEXT_PUBLIC_
-for var in $(env | grep '^NEXT_PUBLIC_' | cut -d= -f1); do
-  # Get the value of the variable
-  value=$(printenv $var)
-  # Escape any double quotes in the value
-  escaped_value=$(echo $value | sed 's/"/\\"/g')
-  # Add to the env-config.js file
-  echo "  \"$var\": \"$escaped_value\"," >> /app/public/env-config.js
+# Procesar variables de entorno que comienzan con NEXT_PUBLIC_
+env | grep '^NEXT_PUBLIC_' | while IFS='=' read -r key value; do
+  # Escapar comillas dobles en el valor
+  escaped_value=$(echo "$value" | sed 's/"/\\"/g')
+  # Añadir al archivo env-config.js
+  echo "  \"$key\": \"$escaped_value\"," >> /app/public/env-config.js
 done
 
-# Handle BASE_URL separately if it exists
+# Añadir BASE_URL si existe
 if [ ! -z "$BASE_URL" ]; then
   echo "  \"BASE_URL\": \"$BASE_URL\"," >> /app/public/env-config.js
-
-  # Also perform the URL replacement in the built files
-  echo "Replacing URLs in built files with BASE_URL=$BASE_URL"
-  find /app/.next -type f -exec sed -i "s|http://localhost:9500|$BASE_URL|g" {} +
 fi
 
-# Close the object
+# Cerrar el objeto
 echo "}" >> /app/public/env-config.js
 
-echo "Runtime environment configuration generated at /app/public/env-config.js"
-
-# Make the file accessible
+# Hacer el archivo accesible
 chmod 644 /app/public/env-config.js
 
-echo "Starting Next.js application..."
-# Execute the command passed to the entrypoint
+echo "Configuración de entorno generada en /app/public/env-config.js"
+
+# Ejecutar el comando pasado al entrypoint (normalmente npm run start)
 exec "$@"
