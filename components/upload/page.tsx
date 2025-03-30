@@ -18,7 +18,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getBackendUrl, getRuntimeEnv } from "@/utils/runtime-env";
 import { Loader2 } from "lucide-react";
 import Papa, { ParseResult } from "papaparse";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -53,9 +52,10 @@ const ERROR_LIMIT = 5000;
 const MAX_CONCURRENT_REQUESTS = 5;
 const MAX_RETRIES = 3;
 
+const urlUpload = "/api/proxy/invoices";
 export default function UploadCSV({
   title,
-  apiUrl = getBackendUrl() || getRuntimeEnv("NEXT_PUBLIC_URL_BACKEND"),
+  apiUrl = urlUpload,
 }: UploadCSVProps) {
   const [previewData, setPreviewData] = useState<Documento[]>([]);
   const [failedDocuments, setFailedDocuments] = useState<ErrorValidacion[]>([]);

@@ -2,7 +2,6 @@
   "compilerOptions": {
     "target": "es2020",
     "lib": ["DOM", "dom.iterable", "ESNext", "webworker"],
-    "types": [],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -23,12 +22,6 @@
       "@/*": ["./*"]
     }
   },
-  "include": [
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts",
-    "out/types/**/*.ts"
-  ],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
   "exclude": ["node_modules"]
 }

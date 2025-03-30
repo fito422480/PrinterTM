@@ -1,25 +1,40 @@
 FROM node:23-alpine AS builder
 
-# Crea el directorio de la aplicación
+# Establecer directorio de trabajo
 WORKDIR /app
 
-# Copia el archivo package.json y package-lock.json para instalar las dependencias primero
+# Copiar archivos de dependencias
 COPY package.json package-lock.json ./
 
-# Instala las dependencias con --legacy-peer-deps para evitar el error de compatibilidad
-RUN npm ci --legacy-peer-deps
+# Instalar dependencias
+RUN npm ci --legacy-peer-deps sharp
 
-# Copia el resto del código fuente al contenedor
+# Copiar todo el código fuente
 COPY . .
 
-# Ejecuta el script para generar el archivo de variables de entorno (esto genera /public/env-config.js)
-RUN node env-config.js
-
-# Compila el proyecto Next.js
+# Construir la aplicación
 RUN npm run build
 
-# Se expone el puerto
+# Etapa de producción
+FROM node:23-alpine AS runner
+
+WORKDIR /app
+
+# Copiar archivos necesarios
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
+COPY entrypoint.sh /app/entrypoint.sh
+
+# Dar permisos de ejecución al entrypoint
+RUN chmod +x /app/entrypoint.sh
+
+# Exponer puerto
 EXPOSE 3000
 
-# Configura el comando para iniciar Next.js en modo producción
+# Usar el entrypoint
+ENTRYPOINT ["/app/entrypoint.sh"]
+
+# Comando por defecto
 CMD ["npm", "run", "start"]

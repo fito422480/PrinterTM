@@ -1,17 +1,16 @@
 import type { Post } from "@/types/posts";
-import { getBackendUrl,  } from "../next.config.mjs";
 
 export const fetchPosts = async (): Promise<Post[]> => {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 segundos de timeout
 
   try {
-    const backendUrl = getBackendUrl();
-    if (!backendUrl) {
+    const invoicesUrl = `/api/proxy/invoices/`;
+    if (!invoicesUrl) {
       throw new Error("La URL del backend no está configurada.");
     }
 
-    const response = await fetch(backendUrl, {
+    const response = await fetch(invoicesUrl, {
       headers: {
         "Content-Type": "application/json",
       },

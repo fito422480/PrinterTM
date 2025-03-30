@@ -1,20 +1,16 @@
 import type { AnalyticsItem } from "@/types/analytics";
-import { getBackendAnalyticsUrl, getRuntimeEnv } from "@/utils/runtime-env";
 
 export const fetchAnalytics = async (): Promise<AnalyticsItem[]> => {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 5000); // Timeout de 5s
 
   try {
-    const apiUrl =
-      getBackendAnalyticsUrl() ||
-      getRuntimeEnv("NEXT_PUBLIC_URL_BACKEND_ANALYTICS");
-
-    if (!apiUrl) {
+    const analyticsUrl = `/api/proxy/analytics/`;
+    if (!analyticsUrl) {
       throw new Error("La URL del backend no está configurada.");
     }
 
-    const response = await fetch(apiUrl, {
+    const response = await fetch(analyticsUrl, {
       headers: {
         "Content-Type": "application/json",
       },

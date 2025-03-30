@@ -27,8 +27,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { fetchPosts as posts } from "@/data/posts";
-import { getBackendUrl, getRuntimeEnv } from "@/utils/runtime-env";
-
 // Esquema de validación usando zod
 const formSchema = z.object({
   invoiceNumber: z.coerce
@@ -143,20 +141,11 @@ const PostEditPage = ({ params }: PostEditPageProps) => {
 
     try {
       // Definir la URL del backend con la constante del entorno, con un fallback en localhost
-      const backendUrl = getBackendUrl();
+      const invoicesUrl = `/api/proxy/invoices`;
 
-      if (!backendUrl) {
-        throw new Error("La URL del backend no está configurada.");
-      }
-
-      const runtimeBackendUrl =
-        getRuntimeEnv("NEXT_PUBLIC_URL_BACKEND_STATS") || backendUrl;
-      if (!runtimeBackendUrl) {
-        throw new Error("La URL del backend no está configurada.");
-      }
       // URL de la API para actualizar el documento
-      console.log("url", runtimeBackendUrl);
-      const apiUrl = `${runtimeBackendUrl()}/${id}`;
+      console.log("url:", invoicesUrl);
+      const apiUrl = `${invoicesUrl}/${id}`;
 
       // Configurar el cuerpo de la solicitud PUT
       const requestBody = JSON.stringify({

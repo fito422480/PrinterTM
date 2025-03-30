@@ -2,11 +2,10 @@ version: "3.8"
 
 services:
   nextjs-app:
-    image: frontend:1.0.1
-    container_name: nextjs-frontend
     build:
       context: .
       dockerfile: Dockerfile.front
+    container_name: nextjs-frontend
     restart: unless-stopped
     ports:
       - "3000:3000"
@@ -18,18 +17,16 @@ services:
       - KEYCLOAK_URL=http://q-caas-wk-02.sec.telecel.net.py:8080
       - KEYCLOAK_AUTH=http://q-caas-wk-02.sec.telecel.net.py:8080/realms/MFS_ACCESS_INVOICES/protocol/openid-connect/ext/ciba/auth
       - KEYCLOAK_REALM=MFS_ACCESS_INVOICES
-      - NEXT_PUBLIC_URL_BACKEND=http://localhost:9500/invoices
-      - NEXT_PUBLIC_URL_BACKEND_STATS=http://localhost:9500/invoices/stats
-      - NEXT_PUBLIC_URL_BACKEND_ANALYTICS=http://localhost:9500/invoices/analytics
+      - NEXT_PUBLIC_URL_BACKEND=http://mfs-invoice-web-api.qa.sec.telecel.net.py/invoices
+      - NEXT_PUBLIC_URL_BACKEND_STATS=http://mfs-invoice-web-api.qa.sec.telecel.net.py/invoices/stats
+      - NEXT_PUBLIC_URL_BACKEND_ANALYTICS=http://mfs-invoice-web-api.qa.sec.telecel.net.py/invoices/analytics
       - NEXT_PUBLIC_MAX_FILE_SIZE=10737418240
-      - BASE_URL=http://localhost:9500
+      - BASE_URL=http://mfs-invoice-web-api.qa.sec.telecel.net.py
       - UPLOAD_DIR=/app/uploads
       - CONCURRENT_WORKERS=4
     volumes:
-      - ./entrypoint.sh:/app/entrypoint.sh
       - nextjs_uploads:/app/uploads
-    entrypoint: ["/bin/sh", "/app/entrypoint.sh"]
-    command: ["npm", "run", "start"]
+      - ./entrypoint.sh:/app/entrypoint.sh
     working_dir: /app
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -46,6 +43,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+
 networks:
   default:
     name: nextjs-network
