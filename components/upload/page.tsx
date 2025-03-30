@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -18,10 +19,33 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Loader2 } from "lucide-react";
+import { Download, HelpCircle, Loader2, Info } from "lucide-react";
 import Papa, { ParseResult } from "papaparse";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { z, ZodError } from "zod";
+
+// 1. Agregar componente Toast para retroalimentación visual
+const Toast = ({ message, type = "success", onClose }: { message: string; type?: "success" | "error" | "info"; onClose: () => void }) => {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onClose();
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  const bgColor = type === "success" ? "bg-green-500" : type === "error" ? "bg-red-500" : "bg-blue-500";
+
+  return (
+    <div className={`fixed bottom-4 right-4 ${bgColor} text-white py-2 px-4 rounded-md shadow-lg z-50 flex items-center transition-opacity duration-300`}
+         role="alert"
+         aria-live="assertive">
+      <span className="mr-2">
+        {type === "success" ? "✓" : type === "error" ? "✕" : "ℹ"}
+      </span>
+      {message}
+    </div>
+  );
+};
 
 const DocumentoSchema = z.object({
   invoiceId: z.string(),
@@ -39,6 +63,75 @@ const DocumentoSchema = z.object({
   status: z.string(),
 });
 
+// Estructura para la información del tipo de datos y su descripción
+const fieldInfo = {
+  invoiceId: {
+    type: "Integer",
+    description: "Identificador único de la factura",
+    ejemplo: "1276143",
+  },
+  traceId: {
+    type: "String",
+    description: "ID de seguimiento del proceso",
+    ejemplo: "e77d7e31-cf8b-463b-bf13-4951ea85a899",
+  },
+  requestId: {
+    type: "String",
+    description: "ID de la solicitud",
+    ejemplo: "e77d7e31-cf8b-463b-bf13-4951ea85a899",
+  },
+  customerId: {
+    type: "Integer",
+    description: "ID del cliente",
+    ejemplo: "12931146",
+  },
+  invoiceOrigin: {
+    type: "String",
+    description: "Origen de la factura",
+    ejemplo: "API_BATCH",
+  },
+  dNumTimb: {
+    type: "Integer",
+    description: "Número de timbrado",
+    ejemplo: "15674904",
+  },
+  dEst: {
+    type: "Integer",
+    description: "Código de establecimiento (3 dígitos)",
+    ejemplo: "001",
+  },
+  dPunExp: {
+    type: "Integer",
+    description: "Punto de expedición (3 dígitos)",
+    ejemplo: "001",
+  },
+  dNumDoc: {
+    type: "Integer",
+    description: "Número de documento (7 dígitos)",
+    ejemplo: "3398246",
+  },
+  dFeEmiDe: {
+    type: "Date",
+    description: "Fecha de emisión (formato: YYYY-MM-DD HH24:MI:SS )",
+    ejemplo: "2025-01-02 23:27:00",
+  },
+  xmlReceived: {
+    type: "String",
+    description: "Contenido XML recibido (sin espacios al inicio o final)",
+    ejemplo: "<rDE>	<DE></DE></rDE>",
+  },
+  creationDate: {
+    type: "Date",
+    description: "Fecha de creación (formato: YYYY-MM-DD HH24:MI:SS)",
+    ejemplo: "2025-01-02 23:27:00",
+  },
+  status: {
+    type: "String",
+    description: "Estado del documento (PENDING, READY)",
+    ejemplo: "PENDING",
+  },
+};
+
 type Documento = z.infer<typeof DocumentoSchema>;
 type ErrorValidacion = { doc: any; errors: string[] };
 
@@ -53,6 +146,15 @@ const MAX_CONCURRENT_REQUESTS = 5;
 const MAX_RETRIES = 3;
 
 const urlUpload = "/api/proxy/invoices";
+
+// Información para los tooltips
+const tooltips = {
+  selectFile: "Seleccione un archivo CSV o TSV para procesar",
+  downloadTemplate: "Descargue una plantilla con la estructura correcta para rellenar",
+  help: "Vea información detallada sobre los campos y formatos requeridos",
+  process: "Enviar las facturas al sistema para su procesamiento"
+};
+
 export default function UploadCSV({
   title,
   apiUrl = urlUpload,
@@ -76,6 +178,21 @@ export default function UploadCSV({
   } | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [recordsPerPage, setRecordsPerPage] = useState(10);
+  const [showTemplateInfoDialog, setShowTemplateInfoDialog] = useState(false);
+
+  // 2. Estados para los tooltips
+  const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
+
+  // 3. Estado para mensajes toast
+  const [toast, setToast] = useState<{
+    show: boolean;
+    message: string;
+    type: "success" | "error" | "info";
+  }>({
+    show: false,
+    message: "",
+    type: "success",
+  });
 
   const totalRows = useRef(0);
   const processedRows = useRef(0);
@@ -89,6 +206,18 @@ export default function UploadCSV({
       }
     };
   }, []);
+
+  const showToast = (message: string, type: "success" | "error" | "info" = "success") => {
+    setToast({
+      show: true,
+      message,
+      type,
+    });
+  };
+
+  const hideToast = () => {
+    setToast((prev) => ({ ...prev, show: false }));
+  };
 
   const countRows = useCallback((file: File): Promise<number> => {
     return new Promise((resolve, reject) => {
@@ -110,7 +239,7 @@ export default function UploadCSV({
       if (!file) return;
 
       if (!file.name.endsWith(".csv") && !file.name.endsWith(".tsv")) {
-        alert("Solo se permiten archivos CSV o TSV.");
+        showToast("Solo se permiten archivos CSV o TSV.", "error");
         return;
       }
 
@@ -158,25 +287,99 @@ export default function UploadCSV({
             setFailedDocuments(failed);
             setIsParsing(false);
             setCurrentPage(1); // Reset to first page when new data is loaded
+
+            if (failed.length > 0) {
+              showToast(`Archivo procesado con ${failed.length} errores de validación`, "info");
+            } else {
+              showToast("Archivo procesado correctamente", "success");
+            }
           },
           error: (error) => {
             console.error("Error al procesar CSV:", error);
             setIsParsing(false);
-            alert(`Error al procesar el archivo CSV: ${error.message}`);
+            showToast(`Error al procesar el archivo CSV: ${error.message}`, "error");
           },
         });
       } catch (error) {
         console.error("Error al contar filas:", error);
         setIsParsing(false);
         if (error instanceof Error) {
-          alert(`Error al contar las filas del archivo: ${error.message}`);
+          showToast(`Error al contar las filas del archivo: ${error.message}`, "error");
         } else {
-          alert("Error al contar las filas del archivo.");
+          showToast("Error al contar las filas del archivo.", "error");
         }
       }
     },
     [countRows]
   );
+
+  const downloadTemplateCSV = () => {
+    // Crear filas de ejemplo con datos de muestra
+    const sampleData = [
+      {
+        invoiceId: "123456",
+        traceId: "TRC789012",
+        requestId: "REQ345678",
+        customerId: "901234",
+        invoiceOrigin: "SYSTEM",
+        dNumTimb: "12345678",
+        dEst: "001",
+        dPunExp: "001",
+        dNumDoc: "0000001",
+        dFeEmiDe: "2023-04-15",
+        xmlReceived:
+          "<factura><cliente>Cliente1</cliente><monto>150000</monto></factura>",
+        creationDate: "2023-04-15",
+        status: "PENDING",
+      },
+      {
+        invoiceId: "123457",
+        traceId: "TRC789013",
+        requestId: "REQ345679",
+        customerId: "901235",
+        invoiceOrigin: "MANUAL",
+        dNumTimb: "12345678",
+        dEst: "001",
+        dPunExp: "002",
+        dNumDoc: "0000002",
+        dFeEmiDe: "2023-04-16",
+        xmlReceived:
+          "<factura><cliente>Cliente2</cliente><monto>250000</monto></factura>",
+        creationDate: "2023-04-16",
+        status: "PROCESSED",
+      },
+    ];
+
+    // Crear el CSV
+    const csvContent = Papa.unparse(sampleData);
+
+    // Añadir comentarios informativos al inicio del CSV
+    const csvWithComments =
+      "# Plantilla para carga de facturas\n" +
+      "# Instrucciones:\n" +
+      "# - Todos los campos son obligatorios\n" +
+      "# - invoiceId, customerId, dNumTimb, dEst, dPunExp, dNumDoc: valores numéricos\n" +
+      "# - dFeEmiDe, creationDate: formato YYYY-MM-DD\n" +
+      "# - xmlReceived: contenido XML sin espacios al inicio o final\n" +
+      "# - Para más información, consulte la ayuda del sistema\n\n" +
+      csvContent;
+
+    // Crear y descargar el archivo
+    const blob = new Blob([csvWithComments], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "base.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    // Mostrar mensaje de éxito
+    showToast("Plantilla descargada correctamente", "success");
+  };
 
   const processBatch = async (
     batch: Documento[],
@@ -280,6 +483,9 @@ export default function UploadCSV({
 
       if (apiErrors.length > 0) {
         setShowApiErrorsDialog(true);
+        showToast(`Procesamiento completado con ${apiErrors.length} errores`, "error");
+      } else if (successCount > 0) {
+        showToast(`Se procesaron correctamente ${successCount} facturas`, "success");
       }
     }
   }, [previewData, apiUrl]);
@@ -289,6 +495,7 @@ export default function UploadCSV({
       abortController.current.abort();
     }
     setIsUploadingToAPI(false);
+    showToast("Procesamiento cancelado", "info");
   }, []);
 
   const sortedData = useMemo(() => {
@@ -349,6 +556,8 @@ export default function UploadCSV({
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+
+    showToast("Registros fallidos descargados", "info");
   };
 
   return (
@@ -357,27 +566,206 @@ export default function UploadCSV({
         {title || "Carga de Documentos"}
       </h1>
 
-      <div className="mb-6 flex justify-center">
-        <label className="bg-primary hover:bg-secondary text-white font-bold py-2 px-4 rounded cursor-pointer inline-block">
-          Seleccionar Archivo
-          <input
-            type="file"
-            accept=".csv,.tsv"
-            onChange={handleFileUpload}
-            className="hidden"
-          />
-        </label>
+      {/* Botones con mejoras: dimensiones consistentes, tooltips, transiciones */}
+      <div className="mb-6 flex justify-center space-x-4">
+        {/* Botón Seleccionar Archivo */}
+        <div className="relative">
+          <label
+            className="bg-primary hover:bg-secondary text-white font-bold py-2 px-4 rounded cursor-pointer inline-flex items-center justify-center min-w-[160px] transition-all duration-200 ease-in-out"
+            onMouseEnter={() => setActiveTooltip("selectFile")}
+            onMouseLeave={() => setActiveTooltip(null)}
+            aria-label={tooltips.selectFile}
+          >
+            <span>Seleccionar Archivo</span>
+            <input
+              type="file"
+              accept=".csv,.tsv"
+              onChange={handleFileUpload}
+              className="hidden"
+              aria-hidden="true"
+            />
+          </label>
+          {activeTooltip === "selectFile" && (
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap z-10">
+              {tooltips.selectFile}
+            </div>
+          )}
+        </div>
+
+        {/* Botón Descargar Plantilla */}
+        <div className="relative">
+          <button
+            onClick={downloadTemplateCSV}
+            className="bg-primary hover:bg-secondary text-white font-bold py-2 px-4 rounded cursor-pointer inline-flex items-center justify-center min-w-[160px] transition-all duration-200 ease-in-out"
+            onMouseEnter={() => setActiveTooltip("downloadTemplate")}
+            onMouseLeave={() => setActiveTooltip(null)}
+            aria-label={tooltips.downloadTemplate}
+          >
+            <Download className="mr-2 h-4 w-4" />
+            <span>Descargar Plantilla</span>
+          </button>
+          {activeTooltip === "downloadTemplate" && (
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap z-10">
+              {tooltips.downloadTemplate}
+            </div>
+          )}
+        </div>
+
+        {/* Botón Ayuda */}
+        <div className="relative">
+          <button
+            onClick={() => setShowTemplateInfoDialog(true)}
+            className="bg-primary hover:bg-secondary text-white font-bold py-2 px-4 rounded cursor-pointer inline-flex items-center justify-center min-w-[160px] transition-all duration-200 ease-in-out"
+            onMouseEnter={() => setActiveTooltip("help")}
+            onMouseLeave={() => setActiveTooltip(null)}
+            aria-label={tooltips.help}
+          >
+            <HelpCircle className="mr-2 h-4 w-4" />
+            <span>Ayuda</span>
+          </button>
+          {activeTooltip === "help" && (
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap z-10">
+              {tooltips.help}
+            </div>
+          )}
+        </div>
+
+        {/* Botón Procesar Facturas */}
+        <div className="relative">
+          <button
+            onClick={handleUploadToAPI}
+            className={`bg-primary text-white font-bold py-2 px-4 rounded cursor-pointer inline-flex items-center justify-center min-w-[160px] transition-all duration-200 ease-in-out ${
+              isUploadingToAPI || previewData.length === 0
+                ? "opacity-50 cursor-not-allowed"
+                : "hover:bg-secondary"
+            }`}
+            disabled={isUploadingToAPI || previewData.length === 0}
+            onMouseEnter={() => setActiveTooltip("process")}
+            onMouseLeave={() => setActiveTooltip(null)}
+            aria-label={tooltips.process}
+            aria-disabled={isUploadingToAPI || previewData.length === 0}
+          >
+            {isUploadingToAPI ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <span>Enviando...</span>
+              </>
+            ) : (
+              <span>Procesar Facturas</span>
+            )}
+          </button>
+          {activeTooltip === "process" && (
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap z-10">
+              {tooltips.process}
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Toast notifications */}
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={hideToast}
+        />
+      )}
+
+      {/* Diálogo de información de la plantilla */}
+      <Dialog
+        open={showTemplateInfoDialog}
+        onOpenChange={setShowTemplateInfoDialog}
+      >
+        <DialogContent className="max-w-3xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-black">
+              Información de la Plantilla CSV
+            </DialogTitle>
+            <DialogDescription className="mt-2">
+              <p className="mb-2">
+                Todos los campos son obligatorios para el correcto procesamiento
+                de las facturas.
+              </p>
+              <Alert className="mb-4 bg-yellow-50 border-yellow-200">
+                <AlertDescription className="text-yellow-800">
+                  <span className="font-bold">Importante:</span> Asegúrese de
+                  respetar los tipos de datos y formatos para evitar errores
+                  durante la carga.
+                </AlertDescription>
+              </Alert>
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="h-[400px] mt-2">
+            <div className="mb-4">
+              <h3 className="font-semibold text-gray-700 mb-2">
+                Instrucciones de uso:
+              </h3>
+              <ol className="list-decimal pl-5 space-y-1 text-sm">
+                <li>
+                  Descargue la plantilla base.csv haciendo clic en el botón
+                  "Descargar Plantilla"
+                </li>
+                <li>
+                  Complete los datos según el formato indicado en la tabla a
+                  continuación
+                </li>
+                <li>No cambie el orden ni elimine ninguna columna</li>
+                <li>
+                  Guarde el archivo y súbalo utilizando el botón "Seleccionar
+                  Archivo"
+                </li>
+                <li>
+                  Verifique la vista previa antes de procesar las facturas
+                </li>
+              </ol>
+            </div>
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-gray-100">
+                  <TableHead className="font-bold">Campo</TableHead>
+                  <TableHead className="font-bold">Tipo de Dato</TableHead>
+                  <TableHead className="font-bold">Descripción</TableHead>
+                  <TableHead className="font-bold">Ejemplo</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {Object.entries(fieldInfo).map(([key, value]) => (
+                  <TableRow key={key}>
+                    <TableCell className="font-medium">{key}</TableCell>
+                    <TableCell className="font-semibold text-blue-900">
+                      {value.type}
+                    </TableCell>
+                    <TableCell>{value.description}</TableCell>
+                    <TableCell className="text-gray-600 font-mono text-sm">
+                      {value.ejemplo}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </ScrollArea>
+          <DialogFooter>
+            <Button
+              onClick={() => setShowTemplateInfoDialog(false)}
+              className="bg-primary hover:bg-secondary text-white font-bold transition-colors duration-200"
+            >
+              Cerrar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {selectedFile && (
         <div className="text-center mb-4">
-          <p className="text-sm text-gray-600">
-            Archivo: <span className="font-medium">{selectedFile.name}</span>(
+          <p className="text-sm text-gray-600 flex items-center justify-center">
+            <Info className="mr-2 h-4 w-4 text-blue-500" />
+            Archivo: <span className="font-medium ml-1">{selectedFile.name}</span> (
             {(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
           </p>
         </div>
       )}
 
+      {/* Diálogo de progreso mejorado */}
       <Dialog
         open={isParsing}
         onOpenChange={(open) => !open && setIsParsing(false)}
@@ -386,9 +774,9 @@ export default function UploadCSV({
           <DialogHeader>
             <DialogTitle>Procesando archivo CSV...</DialogTitle>
           </DialogHeader>
-          <div className="relative w-full h-6 bg-gray-200 rounded-md overflow-hidden">
+          <div className="relative w-full h-8 bg-gray-200 rounded-md overflow-hidden mt-4">
             <div
-              className="h-full bg-green-500 transition-all duration-300 ease-in-out progress-bar"
+              className="h-full bg-green-500 transition-all duration-300 ease-in-out"
               style={{ width: `${csvProgress}%` }}
             ></div>
             <div className="absolute inset-0 flex items-center justify-center text-white text-sm font-semibold">
@@ -396,9 +784,13 @@ export default function UploadCSV({
               {totalRows.current} registros)
             </div>
           </div>
+          <p className="text-sm text-gray-600 mt-4 text-center">
+            Por favor espere mientras se procesa el archivo...
+          </p>
         </DialogContent>
       </Dialog>
 
+      {/* Diálogo de carga a API mejorado */}
       <Dialog
         open={isUploadingToAPI}
         onOpenChange={(open) => !open && cancelUpload()}
@@ -407,9 +799,9 @@ export default function UploadCSV({
           <DialogHeader>
             <DialogTitle>Procesando las Facturas...</DialogTitle>
           </DialogHeader>
-          <div className="relative w-full h-6 bg-gray-200 rounded-md overflow-hidden">
+          <div className="relative w-full h-8 bg-gray-200 rounded-md overflow-hidden mt-4">
             <div
-              className="h-full bg-green-500 transition-all duration-300 ease-in-out progress-bar"
+              className="h-full bg-green-500 transition-all duration-300 ease-in-out"
               style={{ width: `${uploadProgress}%` }}
             ></div>
             <div className="absolute inset-0 flex items-center justify-center text-white text-sm font-semibold">
@@ -417,18 +809,30 @@ export default function UploadCSV({
               {previewData.length} registros)
             </div>
           </div>
+          <div className="flex justify-center mt-6">
+            <Button
+              onClick={cancelUpload}
+              className="bg-red-500 hover:bg-red-600 text-white transition-colors duration-200"
+              aria-label="Cancelar procesamiento"
+            >
+              Cancelar
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 
+      {/* Diálogo de errores mejorado */}
       <Dialog open={showApiErrorsDialog} onOpenChange={setShowApiErrorsDialog}>
         <DialogContent className="max-w-3xl max-h-[80vh]">
           <DialogHeader>
-            <DialogTitle>Errores de Envío</DialogTitle>
+            <DialogTitle className="text-xl text-red-600 flex items-center">
+              <span className="mr-2">⚠️</span> Errores de Envío
+            </DialogTitle>
           </DialogHeader>
           <ScrollArea className="h-[300px] mt-4">
             <div className="space-y-2">
               {apiErrors.map((error, idx) => (
-                <Alert variant="destructive" key={idx}>
+                <Alert variant="destructive" key={idx} className="transition-all duration-200 hover:shadow-md">
                   <AlertDescription>
                     <span className="font-semibold">
                       {error.doc.invoiceId || "ID no disponible"}
@@ -440,34 +844,24 @@ export default function UploadCSV({
             </div>
           </ScrollArea>
           <DialogFooter>
-            <Button onClick={() => setShowApiErrorsDialog(false)}>
+            <Button
+              onClick={() => setShowApiErrorsDialog(false)}
+              className="bg-primary hover:bg-secondary text-white font-bold transition-colors duration-200"
+            >
               Cerrar
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <div className="text-center mb-6">
-        <Button
-          onClick={handleUploadToAPI}
-          className="bg-primary hover:bg-secondary text-white font-bold py-2 px-4 rounded"
-          disabled={isUploadingToAPI || previewData.length === 0}
-        >
-          {isUploadingToAPI ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Enviando...
-            </>
-          ) : (
-            "Procesar Facturas"
-          )}
-        </Button>
-      </div>
-
       {successCount > 0 && !isUploadingToAPI && (
         <div className="mb-6">
-          <Alert variant="default" className="bg-green-50 border-green-200">
-            <AlertDescription className="text-green-800">
+          <Alert
+            variant="default"
+            className="bg-green-50 border-green-200 transition-all duration-300 animate-fadeIn"
+          >
+            <AlertDescription className="text-green-800 flex items-center">
+              <span className="mr-2">✓</span>
               Se procesaron correctamente {successCount} facturas.
               {apiErrors.length > 0 && ` Hubo ${apiErrors.length} errores.`}
             </AlertDescription>
@@ -476,9 +870,10 @@ export default function UploadCSV({
       )}
 
       {previewData.length > 0 && (
-        <div className="border rounded-lg shadow-md overflow-hidden mt-6">
+        <div className="border rounded-lg shadow-md overflow-hidden mt-6 transition-all duration-300">
           <div className="p-3 bg-gray-100 flex justify-between items-center">
-            <p className="text-sm font-medium">
+            <p className="text-sm font-medium flex items-center">
+              <span className="mr-2">📋</span>
               Vista Previa ({previewData.length} registros)
             </p>
             <div className="flex space-x-2">
@@ -487,6 +882,8 @@ export default function UploadCSV({
                 size="sm"
                 onClick={() => changePage(currentPage - 1)}
                 disabled={currentPage <= 1}
+                className="bg-white hover:bg-gray-100 transition-colors duration-200"
+                aria-label="Página anterior"
               >
                 Anterior
               </Button>
@@ -498,6 +895,8 @@ export default function UploadCSV({
                 size="sm"
                 onClick={() => changePage(currentPage + 1)}
                 disabled={currentPage >= totalPages}
+                className="bg-white hover:bg-gray-100 transition-colors duration-200"
+                aria-label="Página siguiente"
               >
                 Siguiente
               </Button>
@@ -509,8 +908,9 @@ export default function UploadCSV({
               <TableHeader className="bg-gray-50">
                 <TableRow className="bg-primary text-black dark:text-white">
                   <TableHead
-                    className="px-4 py-2 text-left cursor-pointer"
+                    className="px-4 py-2 text-left cursor-pointer hover:bg-opacity-90 transition-colors duration-200"
                     onClick={() => requestSort("invoiceId")}
+                    aria-label="Ordenar por ID"
                   >
                     ID{" "}
                     {sortConfig?.key === "invoiceId"
@@ -520,8 +920,9 @@ export default function UploadCSV({
                       : ""}
                   </TableHead>
                   <TableHead
-                    className="px-4 py-2 text-left cursor-pointer"
+                    className="px-4 py-2 text-left cursor-pointer hover:bg-opacity-90 transition-colors duration-200"
                     onClick={() => requestSort("traceId")}
+                    aria-label="Ordenar por TraceID"
                   >
                     TRACEID{" "}
                     {sortConfig?.key === "traceId"
@@ -531,8 +932,9 @@ export default function UploadCSV({
                       : ""}
                   </TableHead>
                   <TableHead
-                    className="px-4 py-2 text-left cursor-pointer"
+                    className="px-4 py-2 text-left cursor-pointer hover:bg-opacity-90 transition-colors duration-200"
                     onClick={() => requestSort("dNumTimb")}
+                    aria-label="Ordenar por Timbrado"
                   >
                     TIMBRADO{" "}
                     {sortConfig?.key === "dNumTimb"
@@ -542,8 +944,9 @@ export default function UploadCSV({
                       : ""}
                   </TableHead>
                   <TableHead
-                    className="px-4 py-2 text-left cursor-pointer"
+                    className="px-4 py-2 text-left cursor-pointer hover:bg-opacity-90 transition-colors duration-200"
                     onClick={() => requestSort("dEst")}
+                    aria-label="Ordenar por Establecimiento"
                   >
                     ESTABLECIMIENTO{" "}
                     {sortConfig?.key === "dEst"
@@ -553,8 +956,9 @@ export default function UploadCSV({
                       : ""}
                   </TableHead>
                   <TableHead
-                    className="px-4 py-2 text-left cursor-pointer"
+                    className="px-4 py-2 text-left cursor-pointer hover:bg-opacity-90 transition-colors duration-200"
                     onClick={() => requestSort("dPunExp")}
+                    aria-label="Ordenar por Punto de Expedición"
                   >
                     PUNTO EXP.{" "}
                     {sortConfig?.key === "dPunExp"
@@ -564,8 +968,9 @@ export default function UploadCSV({
                       : ""}
                   </TableHead>
                   <TableHead
-                    className="px-4 py-2 text-left cursor-pointer"
+                    className="px-4 py-2 text-left cursor-pointer hover:bg-opacity-90 transition-colors duration-200"
                     onClick={() => requestSort("dFeEmiDe")}
+                    aria-label="Ordenar por Fecha de Emisión"
                   >
                     FECHA EMISIÓN{" "}
                     {sortConfig?.key === "dFeEmiDe"
@@ -575,8 +980,9 @@ export default function UploadCSV({
                       : ""}
                   </TableHead>
                   <TableHead
-                    className="px-4 py-2 text-left cursor-pointer"
+                    className="px-4 py-2 text-left cursor-pointer hover:bg-opacity-90 transition-colors duration-200"
                     onClick={() => requestSort("xmlReceived")}
+                    aria-label="Ordenar por XML"
                   >
                     XML{" "}
                     {sortConfig?.key === "xmlReceived"
@@ -586,8 +992,9 @@ export default function UploadCSV({
                       : ""}
                   </TableHead>
                   <TableHead
-                    className="px-4 py-2 text-left cursor-pointer"
+                    className="px-4 py-2 text-left cursor-pointer hover:bg-opacity-90 transition-colors duration-200"
                     onClick={() => requestSort("creationDate")}
+                    aria-label="Ordenar por Fecha de Creación"
                   >
                     FECHA CREACIÓN{" "}
                     {sortConfig?.key === "creationDate"
@@ -603,7 +1010,7 @@ export default function UploadCSV({
                 {currentRecords.map((row, index) => (
                   <TableRow
                     key={index}
-                    className="border-b hover:bg-gray-100 transition-colors"
+                    className="border-b hover:bg-gray-100 transition-colors duration-150"
                   >
                     <TableCell className="px-4 py-2">{row.invoiceId}</TableCell>
                     <TableCell className="px-4 py-2">{row.traceId}</TableCell>
@@ -626,19 +1033,20 @@ export default function UploadCSV({
       )}
 
       {failedDocuments.length > 0 && (
-        <div className="border rounded-lg shadow-md mt-6">
+        <div className="border rounded-lg shadow-md mt-6 transition-all duration-300">
           <div className="p-3 bg-red-100 flex justify-between items-center">
-            <p className="text-sm font-medium text-red-800">
+            <p className="text-sm font-medium text-red-800 flex items-center">
+              <span className="mr-2">⚠️</span>
               Errores de Validación ({failedDocuments.length} registros)
             </p>
-            <Button
-              variant="outline"
-              size="sm"
-              className="bg-white"
+            <button
               onClick={downloadFailedRecords}
+              className="bg-primary hover:bg-secondary text-white font-bold py-1 px-3 rounded cursor-pointer inline-flex items-center transition-all duration-200"
+              aria-label="Descargar registros fallidos"
             >
+              <Download className="mr-2 h-4 w-4" />
               Descargar registros fallidos
-            </Button>
+            </button>
           </div>
           <ScrollArea className="h-[300px]">
             <Table className="w-full border-collapse">
@@ -650,7 +1058,7 @@ export default function UploadCSV({
               </TableHeader>
               <TableBody>
                 {failedDocuments.map((doc, idx) => (
-                  <TableRow key={idx} className="border-b">
+                  <TableRow key={idx} className="border-b hover:bg-red-50 transition-colors duration-150">
                     <TableCell className="px-4 py-2 max-w-[300px] truncate">
                       {JSON.stringify(doc.doc)}
                     </TableCell>
@@ -664,6 +1072,17 @@ export default function UploadCSV({
           </ScrollArea>
         </div>
       )}
+
+      {/* Agregar estilos CSS para animaciones */}
+      <style jsx global>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(-10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.3s ease-in-out;
+        }
+      `}</style>
     </div>
   );
 }
