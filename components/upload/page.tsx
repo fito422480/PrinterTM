@@ -19,13 +19,21 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Download, HelpCircle, Loader2, Info } from "lucide-react";
+import { Download, HelpCircle, Info, Loader2 } from "lucide-react";
 import Papa, { ParseResult } from "papaparse";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { z, ZodError } from "zod";
 
 // 1. Agregar componente Toast para retroalimentación visual
-const Toast = ({ message, type = "success", onClose }: { message: string; type?: "success" | "error" | "info"; onClose: () => void }) => {
+const Toast = ({
+  message,
+  type = "success",
+  onClose,
+}: {
+  message: string;
+  type?: "success" | "error" | "info";
+  onClose: () => void;
+}) => {
   useEffect(() => {
     const timer = setTimeout(() => {
       onClose();
@@ -33,12 +41,19 @@ const Toast = ({ message, type = "success", onClose }: { message: string; type?:
     return () => clearTimeout(timer);
   }, [onClose]);
 
-  const bgColor = type === "success" ? "bg-green-500" : type === "error" ? "bg-red-500" : "bg-blue-500";
+  const bgColor =
+    type === "success"
+      ? "bg-green-500"
+      : type === "error"
+      ? "bg-red-500"
+      : "bg-blue-500";
 
   return (
-    <div className={`fixed bottom-4 right-4 ${bgColor} text-white py-2 px-4 rounded-md shadow-lg z-50 flex items-center transition-opacity duration-300`}
-         role="alert"
-         aria-live="assertive">
+    <div
+      className={`fixed bottom-4 right-4 ${bgColor} text-white py-2 px-4 rounded-md shadow-lg z-50 flex items-center transition-opacity duration-300`}
+      role="alert"
+      aria-live="assertive"
+    >
       <span className="mr-2">
         {type === "success" ? "✓" : type === "error" ? "✕" : "ℹ"}
       </span>
@@ -96,12 +111,12 @@ const fieldInfo = {
     ejemplo: "15674904",
   },
   dEst: {
-    type: "Integer",
+    type: "String",
     description: "Código de establecimiento (3 dígitos)",
     ejemplo: "001",
   },
   dPunExp: {
-    type: "Integer",
+    type: "String",
     description: "Punto de expedición (3 dígitos)",
     ejemplo: "001",
   },
@@ -150,9 +165,10 @@ const urlUpload = "/api/proxy/invoices";
 // Información para los tooltips
 const tooltips = {
   selectFile: "Seleccione un archivo CSV o TSV para procesar",
-  downloadTemplate: "Descargue una plantilla con la estructura correcta para rellenar",
+  downloadTemplate:
+    "Descargue una plantilla con la estructura correcta para rellenar",
   help: "Vea información detallada sobre los campos y formatos requeridos",
-  process: "Enviar las facturas al sistema para su procesamiento"
+  process: "Enviar las facturas al sistema para su procesamiento",
 };
 
 export default function UploadCSV({
@@ -207,7 +223,10 @@ export default function UploadCSV({
     };
   }, []);
 
-  const showToast = (message: string, type: "success" | "error" | "info" = "success") => {
+  const showToast = (
+    message: string,
+    type: "success" | "error" | "info" = "success"
+  ) => {
     setToast({
       show: true,
       message,
@@ -289,7 +308,10 @@ export default function UploadCSV({
             setCurrentPage(1); // Reset to first page when new data is loaded
 
             if (failed.length > 0) {
-              showToast(`Archivo procesado con ${failed.length} errores de validación`, "info");
+              showToast(
+                `Archivo procesado con ${failed.length} errores de validación`,
+                "info"
+              );
             } else {
               showToast("Archivo procesado correctamente", "success");
             }
@@ -297,14 +319,20 @@ export default function UploadCSV({
           error: (error) => {
             console.error("Error al procesar CSV:", error);
             setIsParsing(false);
-            showToast(`Error al procesar el archivo CSV: ${error.message}`, "error");
+            showToast(
+              `Error al procesar el archivo CSV: ${error.message}`,
+              "error"
+            );
           },
         });
       } catch (error) {
         console.error("Error al contar filas:", error);
         setIsParsing(false);
         if (error instanceof Error) {
-          showToast(`Error al contar las filas del archivo: ${error.message}`, "error");
+          showToast(
+            `Error al contar las filas del archivo: ${error.message}`,
+            "error"
+          );
         } else {
           showToast("Error al contar las filas del archivo.", "error");
         }
@@ -483,9 +511,15 @@ export default function UploadCSV({
 
       if (apiErrors.length > 0) {
         setShowApiErrorsDialog(true);
-        showToast(`Procesamiento completado con ${apiErrors.length} errores`, "error");
+        showToast(
+          `Procesamiento completado con ${apiErrors.length} errores`,
+          "error"
+        );
       } else if (successCount > 0) {
-        showToast(`Se procesaron correctamente ${successCount} facturas`, "success");
+        showToast(
+          `Se procesaron correctamente ${successCount} facturas`,
+          "success"
+        );
       }
     }
   }, [previewData, apiUrl]);
@@ -664,11 +698,7 @@ export default function UploadCSV({
 
       {/* Toast notifications */}
       {toast.show && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={hideToast}
-        />
+        <Toast message={toast.message} type={toast.type} onClose={hideToast} />
       )}
 
       {/* Diálogo de información de la plantilla */}
@@ -759,7 +789,8 @@ export default function UploadCSV({
         <div className="text-center mb-4">
           <p className="text-sm text-gray-600 flex items-center justify-center">
             <Info className="mr-2 h-4 w-4 text-blue-500" />
-            Archivo: <span className="font-medium ml-1">{selectedFile.name}</span> (
+            Archivo:{" "}
+            <span className="font-medium ml-1">{selectedFile.name}</span> (
             {(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
           </p>
         </div>
@@ -832,7 +863,11 @@ export default function UploadCSV({
           <ScrollArea className="h-[300px] mt-4">
             <div className="space-y-2">
               {apiErrors.map((error, idx) => (
-                <Alert variant="destructive" key={idx} className="transition-all duration-200 hover:shadow-md">
+                <Alert
+                  variant="destructive"
+                  key={idx}
+                  className="transition-all duration-200 hover:shadow-md"
+                >
                   <AlertDescription>
                     <span className="font-semibold">
                       {error.doc.invoiceId || "ID no disponible"}
@@ -1058,7 +1093,10 @@ export default function UploadCSV({
               </TableHeader>
               <TableBody>
                 {failedDocuments.map((doc, idx) => (
-                  <TableRow key={idx} className="border-b hover:bg-red-50 transition-colors duration-150">
+                  <TableRow
+                    key={idx}
+                    className="border-b hover:bg-red-50 transition-colors duration-150"
+                  >
                     <TableCell className="px-4 py-2 max-w-[300px] truncate">
                       {JSON.stringify(doc.doc)}
                     </TableCell>
@@ -1076,8 +1114,14 @@ export default function UploadCSV({
       {/* Agregar estilos CSS para animaciones */}
       <style jsx global>{`
         @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(-10px); }
-          to { opacity: 1; transform: translateY(0); }
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
         .animate-fadeIn {
           animation: fadeIn 0.3s ease-in-out;
