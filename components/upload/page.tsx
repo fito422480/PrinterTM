@@ -358,10 +358,10 @@ export default function UploadCSV({
       "# Plantilla para carga de facturas\n" +
       "# Instrucciones:\n" +
       "# - Todos los campos son obligatorios\n" +
-      "# - invoiceId, customerId, dNumTimb, dEst, dPunExp, dNumDoc: valores numéricos\n" +
-      "# - dFeEmiDe, creationDate: formato YYYY-MM-DD\n" +
+      "# - invoiceId, customerId, dNumTimb, dNumDoc: valores numéricos\n" +
+      "# - dFeEmiDe, creationDate: formato YYYY-MM-DD HH24:MI:SS \n" +
       "# - xmlReceived: contenido XML sin espacios al inicio o final\n" +
-      "# - Para más información, consulte la ayuda del sistema\n\n" +
+      "# - Para mas informacion, consulte la ayuda del sistema\n\n" +
       csvContent;
 
     // Crear y descargar el archivo

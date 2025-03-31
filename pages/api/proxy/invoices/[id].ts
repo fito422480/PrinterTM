@@ -1,11 +1,10 @@
-// pages/api/proxy/invoices/[id].ts
 import { apiTimeout, backendUrl } from "@/utils/config";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 export const config = {
   api: {
     bodyParser: {
-      sizeLimit: "4mb",
+      sizeLimit: "50mb", // Ajustable según necesidad
     },
     externalResolver: true,
   },
@@ -21,61 +20,60 @@ export default async function handler(
 
   const { id } = req.query;
 
-  if (!id) {
-    return res.status(400).json({ error: "ID de documento requerido" });
+  if (!id || Array.isArray(id)) {
+    return res
+      .status(400)
+      .json({ error: "ID de documento requerido o inválido." });
   }
 
-  // Construir la URL con el ID
-  // Como backendUrl ya incluye '/invoices', solo necesitamos añadir el ID
-  const targetUrl = `${backendUrl}/${id}`;
+  // Construcción segura de la URL
+  const targetUrl = new URL(`${backendUrl}/${id}`).toString();
 
-  console.log(`Solicitud proxy a: ${targetUrl}, Método: ${req.method}`);
+  console.log(`[Proxy] ➡️ ${req.method} ${targetUrl}`);
 
   try {
-    // Eliminar encabezados específicos del host
-    const headers = { ...req.headers };
-    delete headers.host;
-    delete headers.connection;
+    // Filtrar solo los encabezados necesarios
+    const headers = new Headers({
+      "Content-Type": "application/json",
+      ...(req.headers.authorization && {
+        Authorization: req.headers.authorization,
+      }),
+    });
 
-    const requestOptions = {
+    const requestOptions: RequestInit = {
       method: req.method,
-      headers: new Headers(headers as HeadersInit),
+      headers,
       body:
         req.method !== "GET" && req.method !== "HEAD"
           ? JSON.stringify(req.body)
           : undefined,
-      signal: AbortSignal.timeout(apiTimeout || 30000), // 30 segundos de tiempo de espera
+      signal: AbortSignal.timeout(apiTimeout || 30000), // 30 segundos de timeout
     };
 
-    console.log(`Enviando solicitud con opciones:`, {
-      url: targetUrl,
+    console.log(`[Proxy] Enviando request con opciones:`, {
       method: req.method,
+      url: targetUrl,
       bodySize: req.body ? JSON.stringify(req.body).length : 0,
     });
 
     const apiRes = await fetch(targetUrl, requestOptions);
 
-    // Manejar la respuesta según el tipo de contenido
-    const contentType = apiRes.headers.get("content-type");
-    let data;
+    // Reenviar headers de la respuesta del backend
+    apiRes.headers.forEach((value, key) => res.setHeader(key, value));
 
-    if (contentType?.includes("application/json")) {
-      data = await apiRes.json();
-    } else {
-      data = await apiRes.text();
-    }
+    // Manejo dinámico del contenido
+    const contentType = apiRes.headers.get("content-type") || "";
+    const responseData = contentType.includes("application/json")
+      ? await apiRes.json()
+      : await apiRes.text();
 
-    // Establecer encabezados de respuesta
-    apiRes.headers.forEach((value, key) => {
-      res.setHeader(key, value);
-    });
-
-    return res.status(apiRes.status).send(data);
+    return res.status(apiRes.status).send(responseData);
   } catch (error: any) {
-    console.error(`Error al conectar con facturas ID ${id}:`, error);
+    console.error(`[Proxy] ❌ Error en la solicitud a ${targetUrl}:`, error);
+
     return res.status(500).json({
       error: "Error al conectarse a la API de facturas",
-      message: error.message,
+      message: error.message || "Ocurrió un error desconocido",
       code: error.code || "UNKNOWN",
     });
   }
