@@ -1,7 +1,7 @@
-import { parentPort, workerData } from "worker_threads";
+import csv from "csv-parser";
 import { createReadStream } from "fs";
 import { Transform } from "stream";
-import csv from "csv-parser";
+import { parentPort } from "worker_threads";
 
 interface CSVRow {
   [key: string]: string | number | boolean | null;

@@ -1,26 +1,18 @@
 // workers/csv.worker.ts
-import { parentPort, workerData } from "worker_threads";
 import fs from "fs";
-import path from "path";
 import Papa from "papaparse";
+import path from "path";
+import { parentPort, workerData } from "worker_threads";
 import { z } from "zod";
 
 const { csvPath } = workerData;
 
 // Schema for validation
 const DocumentoSchema = z.object({
-  invoiceId: z.string(),
   traceId: z.string().uuid(),
   requestId: z.string().uuid(),
-  customerId: z.string(),
   invoiceOrigin: z.string(),
-  dNumTimb: z.string(),
-  dEst: z.string(),
-  dPunExp: z.string(),
-  dNumDoc: z.string(),
-  dFeEmiDe: z.string(),
   xmlReceived: z.string().trim(),
-  creationDate: z.string(),
   status: z.string(),
 });
 

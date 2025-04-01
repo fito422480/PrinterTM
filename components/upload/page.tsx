@@ -63,28 +63,15 @@ const Toast = ({
 };
 
 const DocumentoSchema = z.object({
-  invoiceId: z.string(),
   traceId: z.string(),
   requestId: z.string(),
-  customerId: z.string(),
   invoiceOrigin: z.string(),
-  dNumTimb: z.string(),
-  dEst: z.string(),
-  dPunExp: z.string(),
-  dNumDoc: z.string(),
-  dFeEmiDe: z.string(),
   xmlReceived: z.string().trim(),
-  creationDate: z.string(),
   status: z.string(),
 });
 
 // Estructura para la información del tipo de datos y su descripción
 const fieldInfo = {
-  invoiceId: {
-    type: "Integer",
-    description: "Identificador único de la factura",
-    ejemplo: "1276143",
-  },
   traceId: {
     type: "String",
     description: "ID de seguimiento del proceso",
@@ -95,54 +82,19 @@ const fieldInfo = {
     description: "ID de la solicitud",
     ejemplo: "e77d7e31-cf8b-463b-bf13-4951ea85a899",
   },
-  customerId: {
-    type: "Integer",
-    description: "ID del cliente",
-    ejemplo: "12931146",
-  },
   invoiceOrigin: {
     type: "String",
-    description: "Origen de la factura",
+    description: "Origen",
     ejemplo: "API_BATCH",
-  },
-  dNumTimb: {
-    type: "Integer",
-    description: "Número de timbrado",
-    ejemplo: "15674904",
-  },
-  dEst: {
-    type: "String",
-    description: "Código de establecimiento (3 dígitos)",
-    ejemplo: "001",
-  },
-  dPunExp: {
-    type: "String",
-    description: "Punto de expedición (3 dígitos)",
-    ejemplo: "001",
-  },
-  dNumDoc: {
-    type: "Integer",
-    description: "Número de documento (7 dígitos)",
-    ejemplo: "3398246",
-  },
-  dFeEmiDe: {
-    type: "Date",
-    description: "Fecha de emisión (formato: YYYY-MM-DD HH24:MI:SS )",
-    ejemplo: "2025-01-02 23:27:00",
   },
   xmlReceived: {
     type: "String",
     description: "Contenido XML recibido (sin espacios al inicio o final)",
     ejemplo: "<rDE>	<DE></DE></rDE>",
   },
-  creationDate: {
-    type: "Date",
-    description: "Fecha de creación (formato: YYYY-MM-DD HH24:MI:SS)",
-    ejemplo: "2025-01-02 23:27:00",
-  },
   status: {
     type: "String",
-    description: "Estado del documento (PENDING, READY)",
+    description: "Estado del documento (PENDING)",
     ejemplo: "PENDING",
   },
 };
@@ -345,36 +297,18 @@ export default function UploadCSV({
     // Crear filas de ejemplo con datos de muestra
     const sampleData = [
       {
-        invoiceId: "123456",
-        traceId: "TRC789012",
-        requestId: "REQ345678",
-        customerId: "901234",
-        invoiceOrigin: "SYSTEM",
-        dNumTimb: "12345678",
-        dEst: "001",
-        dPunExp: "001",
-        dNumDoc: "0000001",
-        dFeEmiDe: "2023-04-15",
-        xmlReceived:
-          "<factura><cliente>Cliente1</cliente><monto>150000</monto></factura>",
-        creationDate: "2023-04-15",
+        traceId: "e77d7e31-cf8b-463b-bf13-4951ea85a899",
+        requestId: "e77d7e31-cf8b-463b-bf13-4951ea85a899",
+        invoiceOrigin: "API_BATCH",
+        xmlReceived: "<rDE><DE></DE></rDE>",
         status: "PENDING",
       },
       {
-        invoiceId: "123457",
-        traceId: "TRC789013",
-        requestId: "REQ345679",
-        customerId: "901235",
-        invoiceOrigin: "MANUAL",
-        dNumTimb: "12345678",
-        dEst: "001",
-        dPunExp: "002",
-        dNumDoc: "0000002",
-        dFeEmiDe: "2023-04-16",
-        xmlReceived:
-          "<factura><cliente>Cliente2</cliente><monto>250000</monto></factura>",
-        creationDate: "2023-04-16",
-        status: "PROCESSED",
+        traceId: "56c9b01b-9e70-4aad-9e9d-378c9e347be8",
+        requestId: "56c9b01b-9e70-4aad-9e9d-378c9e347be8",
+        invoiceOrigin: "API_BATCH",
+        xmlReceived: "<rDE><DE></DE></rDE>",
+        status: "PENDING",
       },
     ];
 
@@ -386,8 +320,6 @@ export default function UploadCSV({
       "# Plantilla para carga de facturas\n" +
       "# Instrucciones:\n" +
       "# - Todos los campos son obligatorios\n" +
-      "# - invoiceId, customerId, dNumTimb, dNumDoc: valores numéricos\n" +
-      "# - dFeEmiDe, creationDate: formato YYYY-MM-DD HH24:MI:SS \n" +
       "# - xmlReceived: contenido XML sin espacios al inicio o final\n" +
       "# - Para mas informacion, consulte la ayuda del sistema\n\n" +
       csvContent;
@@ -501,7 +433,7 @@ export default function UploadCSV({
         setApiErrors((prev) => [
           ...prev,
           {
-            doc: { invoiceId: "global-error" } as Documento,
+            doc: { xmlReceived: "global-error" } as Documento,
             error: error instanceof Error ? error.message : String(error),
           },
         ]);
@@ -870,7 +802,7 @@ export default function UploadCSV({
                 >
                   <AlertDescription>
                     <span className="font-semibold">
-                      {error.doc.invoiceId || "ID no disponible"}
+                      {error.doc.xmlReceived || "xmlReceived no disponible"}
                     </span>
                     : {error.error}
                   </AlertDescription>
@@ -944,18 +876,6 @@ export default function UploadCSV({
                 <TableRow className="bg-primary text-black dark:text-white">
                   <TableHead
                     className="px-4 py-2 text-left cursor-pointer hover:bg-opacity-90 transition-colors duration-200"
-                    onClick={() => requestSort("invoiceId")}
-                    aria-label="Ordenar por ID"
-                  >
-                    ID{" "}
-                    {sortConfig?.key === "invoiceId"
-                      ? sortConfig.direction === "ascending"
-                        ? "↑"
-                        : "↓"
-                      : ""}
-                  </TableHead>
-                  <TableHead
-                    className="px-4 py-2 text-left cursor-pointer hover:bg-opacity-90 transition-colors duration-200"
                     onClick={() => requestSort("traceId")}
                     aria-label="Ordenar por TraceID"
                   >
@@ -968,11 +888,11 @@ export default function UploadCSV({
                   </TableHead>
                   <TableHead
                     className="px-4 py-2 text-left cursor-pointer hover:bg-opacity-90 transition-colors duration-200"
-                    onClick={() => requestSort("dNumTimb")}
-                    aria-label="Ordenar por Timbrado"
+                    onClick={() => requestSort("requestId")}
+                    aria-label="Ordenar por RequestID"
                   >
-                    TIMBRADO{" "}
-                    {sortConfig?.key === "dNumTimb"
+                    REQUESTID{" "}
+                    {sortConfig?.key === "requestId"
                       ? sortConfig.direction === "ascending"
                         ? "↑"
                         : "↓"
@@ -980,35 +900,11 @@ export default function UploadCSV({
                   </TableHead>
                   <TableHead
                     className="px-4 py-2 text-left cursor-pointer hover:bg-opacity-90 transition-colors duration-200"
-                    onClick={() => requestSort("dEst")}
-                    aria-label="Ordenar por Establecimiento"
+                    onClick={() => requestSort("invoiceOrigin")}
+                    aria-label="Ordenar por Origen"
                   >
-                    ESTABLECIMIENTO{" "}
-                    {sortConfig?.key === "dEst"
-                      ? sortConfig.direction === "ascending"
-                        ? "↑"
-                        : "↓"
-                      : ""}
-                  </TableHead>
-                  <TableHead
-                    className="px-4 py-2 text-left cursor-pointer hover:bg-opacity-90 transition-colors duration-200"
-                    onClick={() => requestSort("dPunExp")}
-                    aria-label="Ordenar por Punto de Expedición"
-                  >
-                    PUNTO EXP.{" "}
-                    {sortConfig?.key === "dPunExp"
-                      ? sortConfig.direction === "ascending"
-                        ? "↑"
-                        : "↓"
-                      : ""}
-                  </TableHead>
-                  <TableHead
-                    className="px-4 py-2 text-left cursor-pointer hover:bg-opacity-90 transition-colors duration-200"
-                    onClick={() => requestSort("dFeEmiDe")}
-                    aria-label="Ordenar por Fecha de Emisión"
-                  >
-                    FECHA EMISIÓN{" "}
-                    {sortConfig?.key === "dFeEmiDe"
+                    ORIGEN{" "}
+                    {sortConfig?.key === "invoiceOrigin"
                       ? sortConfig.direction === "ascending"
                         ? "↑"
                         : "↓"
@@ -1028,11 +924,11 @@ export default function UploadCSV({
                   </TableHead>
                   <TableHead
                     className="px-4 py-2 text-left cursor-pointer hover:bg-opacity-90 transition-colors duration-200"
-                    onClick={() => requestSort("creationDate")}
-                    aria-label="Ordenar por Fecha de Creación"
+                    onClick={() => requestSort("status")}
+                    aria-label="Ordenar por Estado"
                   >
-                    FECHA CREACIÓN{" "}
-                    {sortConfig?.key === "creationDate"
+                    ESTADO{" "}
+                    {sortConfig?.key === "status"
                       ? sortConfig.direction === "ascending"
                         ? "↑"
                         : "↓"
@@ -1047,18 +943,15 @@ export default function UploadCSV({
                     key={index}
                     className="border-b hover:bg-gray-100 transition-colors duration-150"
                   >
-                    <TableCell className="px-4 py-2">{row.invoiceId}</TableCell>
                     <TableCell className="px-4 py-2">{row.traceId}</TableCell>
-                    <TableCell className="px-4 py-2">{row.dNumTimb}</TableCell>
-                    <TableCell className="px-4 py-2">{row.dEst}</TableCell>
-                    <TableCell className="px-4 py-2">{row.dPunExp}</TableCell>
-                    <TableCell className="px-4 py-2">{row.dFeEmiDe}</TableCell>
+                    <TableCell className="px-4 py-2">{row.requestId}</TableCell>
+                    <TableCell className="px-4 py-2">
+                      {row.invoiceOrigin}
+                    </TableCell>
                     <TableCell className="px-4 py-2 max-w-[300px] truncate">
                       {row.xmlReceived}
                     </TableCell>
-                    <TableCell className="px-4 py-2">
-                      {row.creationDate}
-                    </TableCell>
+                    <TableCell className="px-4 py-2">{row.status}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
