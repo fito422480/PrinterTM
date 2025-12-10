@@ -19,6 +19,7 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body className={inter.className}>
+        <script src="/env-config.js" />
         <ThemeProvider
           attribute="class"
           defaultTheme="light"

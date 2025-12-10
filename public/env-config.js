@@ -18,4 +18,4 @@ fs.writeFileSync(
   `window.__ENV = ${JSON.stringify(envVariables, null, 2)};`
 );
 
-console.log("✅ Archivo env-config.js generado en /public");
+console.log("Archivo env-config.js generado en /public");
