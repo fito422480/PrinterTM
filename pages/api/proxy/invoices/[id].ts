@@ -29,7 +29,7 @@ export default async function handler(
   // Construcción segura de la URL
   const targetUrl = new URL(`${backendUrl}/${id}`).toString();
 
-  console.log(`[Proxy] ➡️ ${req.method} ${targetUrl}`);
+  console.log(`[Proxy] ${req.method} ${targetUrl}`);
 
   try {
     // Filtrar solo los encabezados necesarios
@@ -69,7 +69,7 @@ export default async function handler(
 
     return res.status(apiRes.status).send(responseData);
   } catch (error: any) {
-    console.error(`[Proxy] ❌ Error en la solicitud a ${targetUrl}:`, error);
+    console.error(`[Proxy] Error en la solicitud a ${targetUrl}:`, error);
 
     return res.status(500).json({
       error: "Error al conectarse a la API de facturas",

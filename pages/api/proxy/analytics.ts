@@ -9,7 +9,7 @@ export default async function handler(
     return res.status(500).json({ error: "URL de Analytics no configurada." });
   }
 
-  console.log(`[Proxy] ➡️ ${req.method} ${backendAnalyticsUrl}`);
+  console.log(`[Proxy] ${req.method} ${backendAnalyticsUrl}`);
 
   try {
     // Filtrar solo los encabezados necesarios
@@ -49,7 +49,7 @@ export default async function handler(
 
     return res.status(apiRes.status).send(responseData);
   } catch (error: any) {
-    console.error(`[Proxy] ❌ Error en la solicitud a Analytics:`, error);
+    console.error(`[Proxy]  Error en la solicitud a Analytics:`, error);
 
     return res.status(500).json({
       error: "Error al conectarse a la API de Analytics",

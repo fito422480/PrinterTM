@@ -20,7 +20,7 @@ export default async function handler(
 
   const targetUrl = backendUrl;
 
-  console.log(`📡 Proxy request to: ${targetUrl} | Method: ${req.method}`);
+  console.log(`Proxy request to: ${targetUrl} | Method: ${req.method}`);
 
   // Controlador de abortos para manejar timeouts
   const controller = new AbortController();
@@ -45,7 +45,7 @@ export default async function handler(
       requestOptions.body = JSON.stringify(req.body);
     }
 
-    console.log(`🔄 Forwarding request: ${targetUrl}`, requestOptions);
+    console.log(`Forwarding request: ${targetUrl}`, requestOptions);
 
     // Hacer la solicitud al backend
     const apiRes = await fetch(targetUrl, requestOptions);
@@ -79,7 +79,7 @@ export default async function handler(
       errorMessage = "Error de conexión con el backend";
     }
 
-    console.error("❌ Proxy error:", error);
+    console.error(" Proxy error:", error);
     return res.status(500).json({ error: errorMessage, code: errorCode });
   }
 }
