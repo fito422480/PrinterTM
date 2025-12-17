@@ -10,6 +10,7 @@ import {
   TableCaption,
 } from "@/components/ui/table";
 import Link from "next/link";
+import { Download } from "lucide-react";
 import { fetchPosts } from "@/data/posts";
 import classNames from "classnames";
 import { Post } from "@/types/posts";
@@ -71,6 +72,35 @@ const PostsTable = ({ limit = 10, title }: PostsTableProps) => {
     }
   };
 
+  const downloadCSV = () => {
+    if (filteredPosts.length === 0) return;
+
+    const headers = ["ID", "FACTURA", "ESTADO", "FECHA", "MONTO", "PROCESADO"];
+    const csvContent = [
+      headers.join(","),
+      ...filteredPosts.map((post) =>
+        [
+          post.ID,
+          post.D_NUM_DOC,
+          post.STATUS,
+          post.D_FE_EMI_DE,
+          // Add other fields if available in Post type, using generics for now based on context
+          (post as any).TOTAL || "", 
+          (post as any).PROCESSED_AT || ""
+        ].join(",")
+      ),
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `facturas_${new Date().toISOString()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="mt-10">
       <h3 className="text-2xl mb-4 font-semibold">
@@ -112,6 +142,14 @@ const PostsTable = ({ limit = 10, title }: PostsTableProps) => {
           onChange={(e) => setSearchTerm(e.target.value)}
           className="bg-slate-50 px-4 py-2 border rounded flex-1"
         />
+
+        <button
+          onClick={downloadCSV}
+          className="px-4 py-2 bg-primary text-black dark:text-white rounded flex items-center gap-2 hover:bg-slate-700 transition"
+        >
+          <Download size={18} />
+          Exportar CSV
+        </button>
       </div>
 
       <Table className="shadow-lg rounded-lg overflow-hidden">

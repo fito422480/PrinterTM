@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import ThemeToggler from "@/components/ThemeToggler";
 import { useTheme } from "next-themes";
+import { Bell } from "lucide-react";
 // Importamos nuestro componente UserAvatar mejorado
 import UserAvatar from "./userAvatar";
 
@@ -66,6 +67,37 @@ const Navbar = () => {
       </Link>
 
       <div className="flex items-center">
+        <DropdownMenu>
+          <DropdownMenuTrigger className="focus:outline-none mr-4">
+            <div className="relative">
+              <Bell className="h-5 w-5 text-primary-foreground/90 hover:text-white transition-colors cursor-pointer" />
+              <span className="absolute -top-1 -right-1 h-2 w-2 bg-red-500 rounded-full animate-pulse" />
+            </div>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-80">
+            <DropdownMenuLabel>Notificaciones</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <div className="max-h-[300px] overflow-y-auto">
+              <DropdownMenuItem className="cursor-pointer flex flex-col items-start gap-1 p-3">
+                <div className="font-semibold text-sm">Bienvenido</div>
+                <div className="text-xs text-muted-foreground">
+                  Sistema actualizado a v0.1.0
+                </div>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="cursor-pointer flex flex-col items-start gap-1 p-3">
+                <div className="font-semibold text-sm">Alerta de Sistema</div>
+                <div className="text-xs text-muted-foreground">
+                  Revisar documentos rechazados recientemente.
+                </div>
+              </DropdownMenuItem>
+            </div>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="text-center justify-center text-xs text-muted-foreground cursor-pointer">
+              Marcar todas como leídas
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
         <ThemeToggler />
         <DropdownMenu>
           <DropdownMenuTrigger className="focus:outline-none">

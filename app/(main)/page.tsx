@@ -3,8 +3,11 @@ import AnalyticsChart from "@/components/dashboard/AnalyticsChart";
 import DashboardCard from "@/components/dashboard/DashboardCard";
 import PostsTable from "@/components/posts/PostsTable";
 import { SpeedInsights } from "@vercel/speed-insights/next";
-import { CircleX, CopyX, ListChecks, Send } from "lucide-react";
+import { CircleX, CopyX, ListChecks, RotateCw, Send } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Home() {
   const [data, setData] = useState({
@@ -55,31 +58,56 @@ export default function Home() {
 
   return (
     <>
+      <div className="flex justify-between items-center mb-5">
+        <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+        <Button
+          onClick={fetchData}
+          variant="outline"
+          size="sm"
+          className="gap-2"
+          disabled={loading}
+        >
+          <RotateCw className={cn("h-4 w-4", loading && "animate-spin")} />
+          Actualizar
+        </Button>
+      </div>
+
       <div className="flex flex-col md:flex-row justify-between gap-5 mb-5">
-        <DashboardCard
-          title="ENVIADAS"
-          count={data.sent}
-          formattedCount={formatNumber(data.sent)}
-          icon={<Send className="text-blue-950" size={52} />}
-        />
-        <DashboardCard
-          title="APROBADAS"
-          count={data.approved}
-          formattedCount={formatNumber(data.approved)}
-          icon={<ListChecks className="text-blue-950" size={52} />}
-        />
-        <DashboardCard
-          title="RECHAZADAS"
-          count={data.rejected}
-          formattedCount={formatNumber(data.rejected)}
-          icon={<CircleX className="text-blue-950" size={52} />}
-        />
-        <DashboardCard
-          title="ERRORES"
-          count={data.errors}
-          formattedCount={formatNumber(data.errors)}
-          icon={<CopyX className="text-blue-950" size={52} />}
-        />
+        {loading ? (
+          <>
+            <Skeleton className="h-[120px] w-full rounded-xl" />
+            <Skeleton className="h-[120px] w-full rounded-xl" />
+            <Skeleton className="h-[120px] w-full rounded-xl" />
+            <Skeleton className="h-[120px] w-full rounded-xl" />
+          </>
+        ) : (
+          <>
+            <DashboardCard
+              title="ENVIADAS"
+              count={data.sent}
+              formattedCount={formatNumber(data.sent)}
+              icon={<Send className="text-blue-950" size={52} />}
+            />
+            <DashboardCard
+              title="APROBADAS"
+              count={data.approved}
+              formattedCount={formatNumber(data.approved)}
+              icon={<ListChecks className="text-blue-950" size={52} />}
+            />
+            <DashboardCard
+              title="RECHAZADAS"
+              count={data.rejected}
+              formattedCount={formatNumber(data.rejected)}
+              icon={<CircleX className="text-blue-950" size={52} />}
+            />
+            <DashboardCard
+              title="ERRORES"
+              count={data.errors}
+              formattedCount={formatNumber(data.errors)}
+              icon={<CopyX className="text-blue-950" size={52} />}
+            />
+          </>
+        )}
       </div>
       <AnalyticsChart />
       <PostsTable title="Facturas" limit={3} />

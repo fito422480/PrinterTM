@@ -214,6 +214,11 @@ export default function UploadCSV({
         return;
       }
 
+      if (file.size === 0) {
+        showToast("El archivo está vacío.", "error");
+        return;
+      }
+
       try {
         setIsParsing(true);
         setSelectedFile(file);
@@ -258,6 +263,11 @@ export default function UploadCSV({
             setFailedDocuments(failed);
             setIsParsing(false);
             setCurrentPage(1); // Reset to first page when new data is loaded
+
+            if (preview.length === 0 && failed.length === 0) {
+              showToast("El archivo no contiene registros válidos para procesar.", "error");
+              return;
+            }
 
             if (failed.length > 0) {
               showToast(
@@ -367,6 +377,12 @@ export default function UploadCSV({
               const errorMessage =
                 errorData.message ||
                 `Error: ${response.status} ${response.statusText}`;
+              
+              // CRITICAL ERROR CHECK: Stop immediately on 500 or similar server crashes
+              if (response.status === 500 || response.status === 503) {
+                 throw new Error(`CRITICAL_ERROR: ${errorMessage}`);
+              }
+
               throw new Error(errorMessage);
             }
 
@@ -374,6 +390,11 @@ export default function UploadCSV({
           } catch (error) {
             if (error instanceof DOMException && error.name === "AbortError") {
               throw error;
+            }
+
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            if (errorMessage.includes("CRITICAL_ERROR")) {
+               throw error;
             }
 
             retries++;
@@ -399,6 +420,18 @@ export default function UploadCSV({
         return { success: false, doc };
       })
     );
+
+    // Check for any critical errors in the batch results
+    const criticalFailure = results.find(
+      (result) : result is PromiseRejectedResult => 
+        result.status === "rejected" && 
+        result.reason instanceof Error && 
+        result.reason.message.includes("CRITICAL_ERROR")
+    );
+
+    if (criticalFailure) {
+      throw criticalFailure.reason;
+    }
 
     const successful = results.filter(
       (result) => result.status === "fulfilled" && result.value.success
@@ -429,12 +462,30 @@ export default function UploadCSV({
       }
     } catch (error) {
       console.error("Error durante la carga de la API:", error);
+      
+      const errorMessage = error instanceof Error ? error.message : String(error);
+
+      // Check for Critical Errors to stop the process
+      if (errorMessage.includes("CRITICAL_ERROR") || errorMessage.includes("ECONNREFUSED") || errorMessage.includes("fetch failed")) {
+         showToast("Error crítico del servidor. Proceso detenido.", "error");
+         setIsUploadingToAPI(false);
+         // Add the error that caused the stop to the list so user knows why
+         setApiErrors((prev) => [
+          ...prev,
+          {
+            doc: { xmlReceived: "PROCESO-DETENIDO" } as Documento,
+            error: `Proceso detenido por error crítico: ${errorMessage.replace("CRITICAL_ERROR: ", "")}`,
+          },
+        ]);
+        return; // EXIT FUNCTION IMMEDIATELY
+      }
+
       if (!(error instanceof DOMException && error.name === "AbortError")) {
         setApiErrors((prev) => [
           ...prev,
           {
             doc: { xmlReceived: "global-error" } as Documento,
-            error: error instanceof Error ? error.message : String(error),
+            error: errorMessage,
           },
         ]);
       }
@@ -736,6 +787,9 @@ export default function UploadCSV({
         <DialogContent className="p-10">
           <DialogHeader>
             <DialogTitle>Procesando archivo CSV...</DialogTitle>
+            <DialogDescription>
+              Progreso de la lectura y validación del archivo local.
+            </DialogDescription>
           </DialogHeader>
           <div className="relative w-full h-8 bg-gray-200 rounded-md overflow-hidden mt-4">
             <div
@@ -761,6 +815,9 @@ export default function UploadCSV({
         <DialogContent className="p-10">
           <DialogHeader>
             <DialogTitle>Procesando las Facturas...</DialogTitle>
+            <DialogDescription>
+              Enviando documentos a la API. Por favor no cierre esta ventana.
+            </DialogDescription>
           </DialogHeader>
           <div className="relative w-full h-8 bg-gray-200 rounded-md overflow-hidden mt-4">
             <div
@@ -791,6 +848,9 @@ export default function UploadCSV({
             <DialogTitle className="text-xl text-red-600 flex items-center">
               <span className="mr-2">⚠️</span> Errores de Envío
             </DialogTitle>
+            <DialogDescription>
+              Se encontraron errores al procesar los siguientes documentos.
+            </DialogDescription>
           </DialogHeader>
           <ScrollArea className="h-[300px] mt-4">
             <div className="space-y-2">
@@ -855,7 +915,12 @@ export default function UploadCSV({
                 Anterior
               </Button>
               <span className="px-2 py-1 text-sm">
-                Página {currentPage} de {totalPages || 1}
+                {filteredData.length > 0
+                  ? `${(currentPage - 1) * recordsPerPage + 1} - ${Math.min(
+                      currentPage * recordsPerPage,
+                      filteredData.length
+                    )} de ${filteredData.length}`
+                  : "0 - 0 de 0"}
               </span>
               <Button
                 variant="outline"
@@ -960,49 +1025,63 @@ export default function UploadCSV({
         </div>
       )}
 
-      {failedDocuments.length > 0 && (
-        <div className="border rounded-lg shadow-md mt-6 transition-all duration-300">
-          <div className="p-3 bg-red-100 flex justify-between items-center">
-            <p className="text-sm font-medium text-red-800 flex items-center">
-              <span className="mr-2">⚠️</span>
-              Errores de Validación ({failedDocuments.length} registros)
-            </p>
-            <button
-              onClick={downloadFailedRecords}
-              className="bg-primary hover:bg-secondary text-white font-bold py-1 px-3 rounded cursor-pointer inline-flex items-center transition-all duration-200"
-              aria-label="Descargar registros fallidos"
+{failedDocuments.length > 0 && (
+  <div className="border rounded-lg shadow-md mt-6 transition-all duration-300">
+    {/* Header */}
+    <div className="p-3 bg-red-100 flex flex-wrap gap-2 justify-between items-center max-w-full overflow-hidden">
+      <p className="text-sm font-medium text-red-800 flex items-center break-all">
+        <span className="mr-2">⚠️</span>
+        Errores de Validación ({failedDocuments.length} registros)
+      </p>
+
+      <button
+        onClick={downloadFailedRecords}
+        className="bg-primary hover:bg-secondary text-white font-bold py-1 px-3 rounded inline-flex items-center transition-all duration-200"
+      >
+        <Download className="mr-2 h-4 w-4" />
+        Descargar registros fallidos
+      </button>
+    </div>
+
+    {/* Table Container */}
+    <div className="h-[300px] overflow-auto max-w-full">
+      <Table className="w-full table-fixed border-collapse">
+        <TableHeader className="bg-gray-50 sticky top-0 z-10">
+          <TableRow>
+            <TableHead className="px-4 py-2 w-1/2">
+              Documento
+            </TableHead>
+            <TableHead className="px-4 py-2 w-1/2">
+              Errores
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+
+        <TableBody>
+          {failedDocuments.map((doc, idx) => (
+            <TableRow
+              key={idx}
+              className="border-b hover:bg-red-50 transition-colors duration-150"
             >
-              <Download className="mr-2 h-4 w-4" />
-              Descargar registros fallidos
-            </button>
-          </div>
-          <ScrollArea className="h-[300px]">
-            <Table className="w-full border-collapse">
-              <TableHeader className="bg-gray-50">
-                <TableRow>
-                  <TableHead className="px-4 py-2">Documento</TableHead>
-                  <TableHead className="px-4 py-2">Errores</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {failedDocuments.map((doc, idx) => (
-                  <TableRow
-                    key={idx}
-                    className="border-b hover:bg-red-50 transition-colors duration-150"
-                  >
-                    <TableCell className="px-4 py-2 max-w-[300px] truncate">
-                      {JSON.stringify(doc.doc)}
-                    </TableCell>
-                    <TableCell className="px-4 py-2 text-red-600">
-                      {doc.errors.join(", ")}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </ScrollArea>
-        </div>
-      )}
+              {/* DOCUMENTO */}
+              <TableCell className="px-4 py-2 align-top">
+                <pre className="text-xs whitespace-pre-wrap break-all max-w-full overflow-hidden text-gray-800">
+                  {JSON.stringify(doc.doc, null, 2)}
+                </pre>
+              </TableCell>
+
+              {/* ERRORES */}
+              <TableCell className="px-4 py-2 text-red-600 align-top break-all max-w-full">
+                {doc.errors.join(", ")}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  </div>
+)}
+
 
       {/* Agregar estilos CSS para animaciones */}
       <style jsx global>{`
